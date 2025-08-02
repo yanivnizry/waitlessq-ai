@@ -1,0 +1,410 @@
+version: '3.8'
+
+services:
+  # Load Balancer
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf
+      - ./nginx/ssl:/etc/nginx/ssl
+      - nginx_logs:/var/log/nginx
+    depends_on:
+      - backend-1
+      - backend-2
+      - backend-3
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.5'
+
+  # Primary PostgreSQL Database
+  postgres-primary:
+    image: postgres:15
+    environment:
+      POSTGRES_DB: waitlessq
+      POSTGRES_USER: waitlessq_user
+      POSTGRES_PASSWORD: waitlessq_password
+      POSTGRES_INITDB_ARGS: "--encoding=UTF-8 --lc-collate=C --lc-ctype=C"
+    volumes:
+      - postgres_primary_data:/var/lib/postgresql/data
+      - ./postgres/postgresql.conf:/etc/postgresql/postgresql.conf
+    ports:
+      - "5432:5432"
+    command: postgres -c config_file=/etc/postgresql/postgresql.conf
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 4G
+          cpus: '2.0'
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U waitlessq_user -d waitlessq"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # PostgreSQL Read Replica 1
+  postgres-replica-1:
+    image: postgres:15
+    environment:
+      POSTGRES_DB: waitlessq
+      POSTGRES_USER: waitlessq_user
+      POSTGRES_PASSWORD: waitlessq_password
+    volumes:
+      - postgres_replica_1_data:/var/lib/postgresql/data
+      - ./postgres/postgresql.conf:/etc/postgresql/postgresql.conf
+    ports:
+      - "5433:5432"
+    command: postgres -c config_file=/etc/postgresql/postgresql.conf
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+          cpus: '1.0'
+    depends_on:
+      postgres-primary:
+        condition: service_healthy
+
+  # PostgreSQL Read Replica 2
+  postgres-replica-2:
+    image: postgres:15
+    environment:
+      POSTGRES_DB: waitlessq
+      POSTGRES_USER: waitlessq_user
+      POSTGRES_PASSWORD: waitlessq_password
+    volumes:
+      - postgres_replica_2_data:/var/lib/postgresql/data
+      - ./postgres/postgresql.conf:/etc/postgresql/postgresql.conf
+    ports:
+      - "5434:5432"
+    command: postgres -c config_file=/etc/postgresql/postgresql.conf
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+          cpus: '1.0'
+    depends_on:
+      postgres-primary:
+        condition: service_healthy
+
+  # Redis Cluster
+  redis-cluster:
+    image: redis:7-alpine
+    command: redis-server --cluster-enabled yes --cluster-config-file nodes.conf --cluster-node-timeout 5000 --appendonly yes
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_cluster_data:/data
+    restart: unless-stopped
+    deploy:
+      replicas: 6
+      resources:
+        limits:
+          memory: 1G
+          cpus: '0.5'
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Backend API - Instance 1
+  backend-1:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    environment:
+      - DATABASE_URL=postgresql://waitlessq_user:waitlessq_password@postgres-primary:5432/waitlessq
+      - READ_DATABASE_URL=postgresql://waitlessq_user:waitlessq_password@postgres-replica-1:5432/waitlessq
+      - REDIS_URL=redis://redis-cluster:6379
+      - SECRET_KEY=your-super-secret-key-change-in-production
+      - JWT_SECRET=your-jwt-secret-key-change-in-production
+      - CORS_ORIGINS=http://localhost:3000,https://yourdomain.com
+      - CACHE_ENABLED=true
+      - RATE_LIMIT_PER_MINUTE=100
+      - ENABLE_METRICS=true
+    depends_on:
+      postgres-primary:
+        condition: service_healthy
+      redis-cluster:
+        condition: service_healthy
+    restart: unless-stopped
+    deploy:
+      replicas: 3
+      resources:
+        limits:
+          memory: 1G
+          cpus: '1.0'
+        reservations:
+          memory: 512M
+          cpus: '0.5'
+
+  # Backend API - Instance 2
+  backend-2:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    environment:
+      - DATABASE_URL=postgresql://waitlessq_user:waitlessq_password@postgres-primary:5432/waitlessq
+      - READ_DATABASE_URL=postgresql://waitlessq_user:waitlessq_password@postgres-replica-2:5432/waitlessq
+      - REDIS_URL=redis://redis-cluster:6379
+      - SECRET_KEY=your-super-secret-key-change-in-production
+      - JWT_SECRET=your-jwt-secret-key-change-in-production
+      - CORS_ORIGINS=http://localhost:3000,https://yourdomain.com
+      - CACHE_ENABLED=true
+      - RATE_LIMIT_PER_MINUTE=100
+      - ENABLE_METRICS=true
+    depends_on:
+      postgres-primary:
+        condition: service_healthy
+      redis-cluster:
+        condition: service_healthy
+    restart: unless-stopped
+    deploy:
+      replicas: 3
+      resources:
+        limits:
+          memory: 1G
+          cpus: '1.0'
+        reservations:
+          memory: 512M
+          cpus: '0.5'
+
+  # Backend API - Instance 3
+  backend-3:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    environment:
+      - DATABASE_URL=postgresql://waitlessq_user:waitlessq_password@postgres-primary:5432/waitlessq
+      - READ_DATABASE_URL=postgresql://waitlessq_user:waitlessq_password@postgres-replica-1:5432/waitlessq
+      - REDIS_URL=redis://redis-cluster:6379
+      - SECRET_KEY=your-super-secret-key-change-in-production
+      - JWT_SECRET=your-jwt-secret-key-change-in-production
+      - CORS_ORIGINS=http://localhost:3000,https://yourdomain.com
+      - CACHE_ENABLED=true
+      - RATE_LIMIT_PER_MINUTE=100
+      - ENABLE_METRICS=true
+    depends_on:
+      postgres-primary:
+        condition: service_healthy
+      redis-cluster:
+        condition: service_healthy
+    restart: unless-stopped
+    deploy:
+      replicas: 3
+      resources:
+        limits:
+          memory: 1G
+          cpus: '1.0'
+        reservations:
+          memory: 512M
+          cpus: '0.5'
+
+  # Frontend Dashboard
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - REACT_APP_API_URL=https://api.yourdomain.com
+      - REACT_APP_WS_URL=wss://api.yourdomain.com
+    depends_on:
+      - backend-1
+      - backend-2
+      - backend-3
+    restart: unless-stopped
+    deploy:
+      replicas: 2
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.5'
+        reservations:
+          memory: 256M
+          cpus: '0.25'
+
+  # PWA Generator Service
+  pwa-generator:
+    build:
+      context: ./pwa-generator
+      dockerfile: Dockerfile
+    ports:
+      - "5001:5001"
+    environment:
+      - BACKEND_URL=https://api.yourdomain.com
+    depends_on:
+      - backend-1
+      - backend-2
+      - backend-3
+    restart: unless-stopped
+    deploy:
+      replicas: 2
+      resources:
+        limits:
+          memory: 1G
+          cpus: '1.0'
+        reservations:
+          memory: 512M
+          cpus: '0.5'
+    volumes:
+      - pwa_storage:/app/storage
+
+  # Celery Worker for Background Jobs
+  celery-worker:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    command: celery -A app.core.celery worker --loglevel=info --concurrency=4
+    environment:
+      - DATABASE_URL=postgresql://waitlessq_user:waitlessq_password@postgres-primary:5432/waitlessq
+      - REDIS_URL=redis://redis-cluster:6379
+      - CELERY_BROKER_URL=redis://redis-cluster:6379/1
+      - CELERY_RESULT_BACKEND=redis://redis-cluster:6379/2
+    depends_on:
+      postgres-primary:
+        condition: service_healthy
+      redis-cluster:
+        condition: service_healthy
+    restart: unless-stopped
+    deploy:
+      replicas: 4
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.5'
+        reservations:
+          memory: 256M
+          cpus: '0.25'
+
+  # Celery Beat for Scheduled Tasks
+  celery-beat:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    command: celery -A app.core.celery beat --loglevel=info
+    environment:
+      - DATABASE_URL=postgresql://waitlessq_user:waitlessq_password@postgres-primary:5432/waitlessq
+      - REDIS_URL=redis://redis-cluster:6379
+      - CELERY_BROKER_URL=redis://redis-cluster:6379/1
+      - CELERY_RESULT_BACKEND=redis://redis-cluster:6379/2
+    depends_on:
+      postgres-primary:
+        condition: service_healthy
+      redis-cluster:
+        condition: service_healthy
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.25'
+
+  # Monitoring Stack
+  prometheus:
+    image: prom/prometheus:latest
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--storage.tsdb.retention.time=200h'
+      - '--web.enable-lifecycle'
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '0.5'
+
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "3001:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_USERS_ALLOW_SIGN_UP=false
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./monitoring/grafana/dashboards:/etc/grafana/provisioning/dashboards
+      - ./monitoring/grafana/datasources:/etc/grafana/provisioning/datasources
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.5'
+
+  # Log Aggregation
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.11.0
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    volumes:
+      - elasticsearch_data:/usr/share/elasticsearch/data
+    ports:
+      - "9200:9200"
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+          cpus: '1.0'
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:8.11.0
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+    ports:
+      - "5601:5601"
+    depends_on:
+      - elasticsearch
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '0.5'
+
+volumes:
+  postgres_primary_data:
+    driver: local
+  postgres_replica_1_data:
+    driver: local
+  postgres_replica_2_data:
+    driver: local
+  redis_cluster_data:
+    driver: local
+  pwa_storage:
+    driver: local
+  nginx_logs:
+    driver: local
+  prometheus_data:
+    driver: local
+  grafana_data:
+    driver: local
+  elasticsearch_data:
+    driver: local
+
+networks:
+  default:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16 

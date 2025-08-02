@@ -1,10 +1,15 @@
 from pydantic_settings import BaseSettings
 from typing import List, Optional
 import os
+import secrets
 
 class Settings(BaseSettings):
+    # Environment
+    ENVIRONMENT: str = "development"
+    DEBUG: bool = False
+    
     # Database
-    DATABASE_URL: str = "postgresql://waitlessq_user:waitlessq_password@localhost:5432/waitlessq"
+    DATABASE_URL: str = "postgresql://waitlessq_user:secure_password@localhost:5432/waitlessq"
     READ_DATABASE_URL: Optional[str] = None  # Read replica URL
     
     # Redis
@@ -14,30 +19,14 @@ class Settings(BaseSettings):
     REDIS_DB: int = 0
     REDIS_PASSWORD: Optional[str] = None
     
-    # Security
-    SECRET_KEY: str = "your-super-secret-key-change-in-production"
-    JWT_SECRET: str = "your-jwt-secret-key-change-in-production"
+    # Security - Use environment variables with secure defaults
+    SECRET_KEY: str = os.getenv("SECRET_KEY", secrets.token_urlsafe(32))
+    JWT_SECRET: str = os.getenv("JWT_SECRET", secrets.token_urlsafe(32))
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
     
-    # CORS - Flexible configuration for development
-    CORS_ORIGINS: List[str] = [
-        "http://localhost:3000", 
-        "http://localhost:3001",
-        "http://127.0.0.1:3000",
-        "http://127.0.0.1:3001",
-        "http://192.168.0.169:3000",
-        "http://192.168.0.169:3001",
-        "http://0.0.0.0:3000",
-        "http://0.0.0.0:3001",
-        # Allow any local network IP for development
-        "http://192.168.*:3000",
-        "http://192.168.*:3001",
-        "http://10.*:3000",
-        "http://10.*:3001",
-        "http://172.*:3000",
-        "http://172.*:3001"
-    ]
+    # CORS - Restrictive by default, configurable via environment
+    CORS_ORIGINS: List[str] = []
     
     # File Upload
     MAX_FILE_SIZE: int = 10 * 1024 * 1024  # 10MB
@@ -93,6 +82,14 @@ class Settings(BaseSettings):
     # Health Checks
     HEALTH_CHECK_TIMEOUT: int = 5  # seconds
     
+    @property
+    def is_production(self) -> bool:
+        return self.ENVIRONMENT.lower() == "production"
+    
+    @property
+    def is_development(self) -> bool:
+        return self.ENVIRONMENT.lower() == "development"
+
     class Config:
         env_file = ".env"
         case_sensitive = True
@@ -102,23 +99,16 @@ class Settings(BaseSettings):
             if field_name == "CORS_ORIGINS":
                 if raw_val:
                     return [origin.strip() for origin in raw_val.split(",")]
-                return [
-                    "http://localhost:3000", 
-                    "http://localhost:3001",
-                    "http://127.0.0.1:3000",
-                    "http://127.0.0.1:3001",
-                    "http://192.168.0.169:3000",
-                    "http://192.168.0.169:3001",
-                    "http://0.0.0.0:3000",
-                    "http://0.0.0.0:3001",
-                    # Allow any local network IP for development
-                    "http://192.168.*:3000",
-                    "http://192.168.*:3001",
-                    "http://10.*:3000",
-                    "http://10.*:3001",
-                    "http://172.*:3000",
-                    "http://172.*:3001"
-                ]
+                return []
             return raw_val
 
-settings = Settings() 
+settings = Settings()
+
+# Validate critical settings in production
+if settings.is_production:
+    if settings.SECRET_KEY == "your-super-secret-key-change-in-production":
+        raise ValueError("SECRET_KEY must be set in production environment")
+    if settings.JWT_SECRET == "your-jwt-secret-key-change-in-production":
+        raise ValueError("JWT_SECRET must be set in production environment")
+    if not settings.CORS_ORIGINS:
+        raise ValueError("CORS_ORIGINS must be configured in production environment") 

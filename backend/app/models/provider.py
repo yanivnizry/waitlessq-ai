@@ -7,6 +7,7 @@ class Provider(Base):
     __tablename__ = "providers"
     
     id = Column(Integer, primary_key=True, index=True)
+    organization_id = Column(Integer, ForeignKey("organizations.id"), nullable=False)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     
     # Business Information
@@ -33,24 +34,39 @@ class Provider(Base):
     appointment_duration = Column(Integer, default=30)  # minutes
     buffer_time = Column(Integer, default=15)  # minutes between appointments
     
-    # Branding
+    # Branding (inherits from organization but can be overridden)
     logo_url = Column(String(500))
-    primary_color = Column(String(7), default="#3B82F6")  # hex color
-    secondary_color = Column(String(7), default="#1F2937")
+    primary_color = Column(String(7))  # inherits from organization if null
+    secondary_color = Column(String(7))  # inherits from organization if null
     
-    # PWA Configuration
-    pwa_subdomain = Column(String(100), unique=True)  # e.g., "salon-name"
-    custom_domain = Column(String(255))
+    # Provider-specific settings
+    settings = Column(JSON, default={
+        "notifications": {
+            "email": True,
+            "sms": False,
+            "push": True
+        },
+        "appointments": {
+            "allow_overbooking": False,
+            "require_confirmation": True,
+            "auto_confirm": False
+        },
+        "queues": {
+            "auto_call_next": True,
+            "estimated_wait_time": True,
+            "max_wait_time": 120  # minutes
+        }
+    })
     
     # Timestamps
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
     
     # Relationships
-    user = relationship("User", backref="providers")
+    organization = relationship("Organization", back_populates="providers")
+    user = relationship("User", back_populates="providers")
     appointments = relationship("Appointment", back_populates="provider")
     queues = relationship("Queue", back_populates="provider")
-    pwa_config = relationship("PWAConfig", back_populates="provider", uselist=False)
     
     def __repr__(self):
-        return f"<Provider(id={self.id}, business_name='{self.business_name}', user_id={self.user_id})>" 
+        return f"<Provider(id={self.id}, business_name='{self.business_name}', organization_id={self.organization_id})>" 

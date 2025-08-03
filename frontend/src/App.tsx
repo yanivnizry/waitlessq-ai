@@ -1,94 +1,118 @@
-import React from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import React from "react"
+import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom"
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
+import { ReactQueryDevtools } from "@tanstack/react-query-devtools"
+import { Toaster } from "sonner"
+import { ThemeProvider } from "next-themes"
+
+import { useAuthStore } from "./store/auth-store"
+import { LoginForm } from "./components/Auth/LoginForm"
+import { RegisterForm } from "./components/Auth/RegisterForm"
+import { ProtectedRoute } from "./components/Auth/ProtectedRoute"
+import { Dashboard } from "./components/Dashboard/Dashboard"
+import { Layout } from "./components/Layout/Layout"
+
+// Create a client
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 5 * 60 * 1000, // 5 minutes
+      gcTime: 10 * 60 * 1000, // 10 minutes
+      retry: 1,
+      refetchOnWindowFocus: false,
+    },
+  },
+})
 
 function App() {
+  const { isAuthenticated } = useAuthStore()
+
   return (
-    <Router>
-      <div className="min-h-screen bg-gray-50">
-        <div className="container mx-auto px-4 py-8">
-          <h1 className="text-4xl font-bold text-gray-900 mb-8">
-            🚀 WaitLessQ Dashboard
-          </h1>
-          
-          <div className="bg-white rounded-lg shadow-lg p-6">
-            <h2 className="text-2xl font-semibold text-gray-800 mb-4">
-              Welcome to WaitLessQ
-            </h2>
-            
-            <p className="text-gray-600 mb-6">
-              Your service provider platform is running successfully! 
-              The backend API is available at <code className="bg-gray-100 px-2 py-1 rounded">http://localhost:8000</code>
-            </p>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                <h3 className="text-lg font-semibold text-blue-800 mb-2">API Status</h3>
-                <p className="text-blue-600">✅ Backend running on port 8000</p>
-                <a 
-                  href="http://localhost:8000/docs" 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="text-blue-600 hover:text-blue-800 underline"
-                >
-                  View API Documentation →
-                </a>
-              </div>
+    <QueryClientProvider client={queryClient}>
+      <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+        <Router>
+          <div className="min-h-screen bg-background">
+            <Routes>
+              {/* Public routes */}
+              <Route
+                path="/login"
+                element={
+                  isAuthenticated ? (
+                    <Navigate to="/dashboard" replace />
+                  ) : (
+                    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+                      <LoginForm />
+                    </div>
+                  )
+                }
+              />
               
-              <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                <h3 className="text-lg font-semibold text-green-800 mb-2">Features</h3>
-                <ul className="text-green-600 space-y-1">
-                  <li>• Provider Management</li>
-                  <li>• Appointment Scheduling</li>
-                  <li>• Real-time Queues</li>
-                  <li>• PWA Generation</li>
-                </ul>
-              </div>
-              
-              <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
-                <h3 className="text-lg font-semibold text-purple-800 mb-2">Scaling Ready</h3>
-                <ul className="text-purple-600 space-y-1">
-                  <li>• Database Optimization</li>
-                  <li>• Redis Caching</li>
-                  <li>• Rate Limiting</li>
-                  <li>• Load Balancing</li>
-                </ul>
-              </div>
-            </div>
-            
-            <div className="mt-8 p-4 bg-gray-50 rounded-lg">
-              <h3 className="text-lg font-semibold text-gray-800 mb-2">Quick Links</h3>
-              <div className="flex flex-wrap gap-4">
-                <a 
-                  href="http://localhost:8000/docs" 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-                >
-                  API Docs
-                </a>
-                <a 
-                  href="http://localhost:8000/health" 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
-                >
-                  Health Check
-                </a>
-                <a 
-                  href="http://localhost:8000/redoc" 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700"
-                >
-                  ReDoc
-                </a>
-              </div>
-            </div>
+              <Route
+                path="/register"
+                element={
+                  isAuthenticated ? (
+                    <Navigate to="/dashboard" replace />
+                  ) : (
+                    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+                      <RegisterForm />
+                    </div>
+                  )
+                }
+              />
+
+              {/* Protected routes */}
+              <Route
+                path="/dashboard"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <Dashboard />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+
+              {/* Redirect root to dashboard or login */}
+              <Route
+                path="/"
+                element={
+                  isAuthenticated ? (
+                    <Navigate to="/dashboard" replace />
+                  ) : (
+                    <Navigate to="/login" replace />
+                  )
+                }
+              />
+
+              {/* Catch all route */}
+              <Route
+                path="*"
+                element={
+                  <Navigate to={isAuthenticated ? "/dashboard" : "/login"} replace />
+                }
+              />
+            </Routes>
           </div>
-        </div>
-      </div>
-    </Router>
-  );
+        </Router>
+        
+        {/* Toast notifications */}
+        <Toaster
+          position="top-right"
+          toastOptions={{
+            duration: 4000,
+            style: {
+              background: "hsl(var(--background))",
+              color: "hsl(var(--foreground))",
+              border: "1px solid hsl(var(--border))",
+            },
+          }}
+        />
+        
+        {/* React Query DevTools */}
+        <ReactQueryDevtools initialIsOpen={false} />
+      </ThemeProvider>
+    </QueryClientProvider>
+  )
 }
 
-export default App; 
+export default App 

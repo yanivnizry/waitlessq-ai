@@ -2,9 +2,9 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import List
 
-from backend.app.core.database import get_db
-from backend.app.models.queue import Queue, QueueEntry
-from backend.app.schemas.queue import QueueCreate, QueueUpdate, QueueResponse, QueueEntryCreate, QueueEntryUpdate, QueueEntryResponse
+from app.core.database import get_db
+from app.models.queue import Queue, QueueEntry
+from app.schemas.queue import QueueCreate, QueueUpdate, QueueResponse, QueueEntryCreate, QueueEntryUpdate, QueueEntryResponse
 
 router = APIRouter()
 

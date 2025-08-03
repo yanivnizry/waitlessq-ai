@@ -1,37 +1,99 @@
-import axios, { AxiosInstance, AxiosResponse } from 'axios';
+import axios, { AxiosInstance, AxiosResponse, InternalAxiosRequestConfig } from 'axios';
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
+// Determine API base URL based on environment
+const getApiBaseUrl = (): string => {
+  const envUrl = process.env.REACT_APP_API_URL;
+  
+  if (envUrl) {
+    return envUrl;
+  }
+  
+  // Default to localhost for development
+  if (process.env.NODE_ENV === 'development') {
+    return 'http://localhost:8000';
+  }
+  
+  // Force HTTPS in production
+  if (process.env.NODE_ENV === 'production') {
+    const protocol = window.location.protocol === 'https:' ? 'https:' : 'http:';
+    const host = window.location.hostname;
+    const port = window.location.port ? `:${window.location.port}` : '';
+    return `${protocol}//${host}${port}`;
+  }
+  
+  return 'http://localhost:8000';
+};
 
-// Create axios instance
+const API_BASE_URL = getApiBaseUrl();
+
+// Create axios instance with security configurations
 const api: AxiosInstance = axios.create({
   baseURL: `${API_BASE_URL}/api/v1`,
   headers: {
     'Content-Type': 'application/json',
   },
+  timeout: 10000, // 10 second timeout
+  withCredentials: true, // Include credentials for CORS
 });
 
-// Request interceptor to add auth token
+// Request interceptor to add auth token and security headers
 api.interceptors.request.use(
-  (config) => {
+  (config: InternalAxiosRequestConfig) => {
     const token = localStorage.getItem('token');
-    if (token) {
+    if (token && config.headers) {
       config.headers.Authorization = `Bearer ${token}`;
     }
+    
+    // Add security headers
+    if (config.headers) {
+      config.headers['X-Requested-With'] = 'XMLHttpRequest';
+    }
+    
     return config;
   },
-  (error) => {
+  (error: any) => {
     return Promise.reject(error);
   }
 );
 
-// Response interceptor to handle errors
+// Response interceptor to handle errors and token refresh
 api.interceptors.response.use(
   (response: AxiosResponse) => response,
-  (error) => {
-    if (error.response?.status === 401) {
+  async (error: any) => {
+    const originalRequest = error.config;
+    
+    // Handle 401 Unauthorized
+    if (error.response?.status === 401 && !originalRequest._retry) {
+      originalRequest._retry = true;
+      
+      // Clear invalid token
       localStorage.removeItem('token');
-      window.location.href = '/login';
+      
+      // Redirect to login
+      if (window.location.pathname !== '/login') {
+        window.location.href = '/login';
+      }
+      
+      return Promise.reject(error);
     }
+    
+    // Handle 403 Forbidden
+    if (error.response?.status === 403) {
+      // Redirect to unauthorized page or show message
+      console.error('Access forbidden');
+    }
+    
+    // Handle 429 Rate Limited
+    if (error.response?.status === 429) {
+      const retryAfter = error.response.headers['retry-after'];
+      console.error(`Rate limited. Retry after ${retryAfter} seconds`);
+    }
+    
+    // Handle network errors
+    if (!error.response) {
+      console.error('Network error - please check your connection');
+    }
+    
     return Promise.reject(error);
   }
 );
@@ -49,16 +111,34 @@ export const authAPI = {
   },
 
   login: async (email: string, password: string) => {
+    // Validate input
+    if (!email || !password) {
+      throw new Error('Email and password are required');
+    }
+    
+    // Sanitize email
+    const sanitizedEmail = email.toLowerCase().trim();
+    
     const formData = new FormData();
-    formData.append('username', email);
+    formData.append('username', sanitizedEmail);
     formData.append('password', password);
     
-    const response = await api.post('/auth/login', formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    });
-    return response.data;
+    try {
+      const response = await api.post('/auth/login', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      return response.data;
+    } catch (error: any) {
+      if (error.response?.status === 401) {
+        throw new Error('Invalid email or password');
+      }
+      if (error.response?.status === 429) {
+        throw new Error('Too many login attempts. Please try again later.');
+      }
+      throw new Error('Login failed. Please try again.');
+    }
   },
 
   register: async (userData: {
@@ -67,142 +147,278 @@ export const authAPI = {
     full_name: string;
     phone?: string;
   }) => {
-    const response = await api.post('/auth/register', userData);
-    return response.data;
+    // Validate input
+    if (!userData.email || !userData.password || !userData.full_name) {
+      throw new Error('Email, password, and full name are required');
+    }
+    
+    // Sanitize input
+    const sanitizedData = {
+      ...userData,
+      email: userData.email.toLowerCase().trim(),
+      full_name: userData.full_name.trim(),
+      phone: userData.phone?.trim() || undefined,
+    };
+    
+    try {
+      const response = await api.post('/auth/register', sanitizedData);
+      return response.data;
+    } catch (error: any) {
+      if (error.response?.data?.detail) {
+        throw new Error(error.response.data.detail);
+      }
+      throw new Error('Registration failed. Please try again.');
+    }
   },
 
   getCurrentUser: async () => {
-    const response = await api.get('/auth/me');
-    return response.data;
+    try {
+      const response = await api.get('/auth/me');
+      return response.data;
+    } catch (error: any) {
+      if (error.response?.status === 401) {
+        localStorage.removeItem('token');
+        throw new Error('Session expired. Please login again.');
+      }
+      throw new Error('Failed to get user information');
+    }
   },
 
   refreshToken: async () => {
-    const response = await api.post('/auth/refresh');
-    return response.data;
+    try {
+      const response = await api.post('/auth/refresh');
+      return response.data;
+    } catch (error: any) {
+      localStorage.removeItem('token');
+      throw new Error('Token refresh failed. Please login again.');
+    }
   },
 };
 
 // Providers API
 export const providersAPI = {
-  getProviders: async () => {
-    const response = await api.get('/providers');
-    return response.data;
+  getProviders: async (params?: { skip?: number; limit?: number; search?: string }) => {
+    try {
+      const response = await api.get('/providers', { params });
+      return response.data;
+    } catch (error: any) {
+      if (error.response?.status === 401) {
+        throw new Error('Authentication required');
+      }
+      throw new Error('Failed to fetch providers');
+    }
   },
 
   getProvider: async (id: number) => {
-    const response = await api.get(`/providers/${id}`);
-    return response.data;
+    if (!id || id <= 0) {
+      throw new Error('Invalid provider ID');
+    }
+    
+    try {
+      const response = await api.get(`/providers/${id}`);
+      return response.data;
+    } catch (error: any) {
+      if (error.response?.status === 404) {
+        throw new Error('Provider not found');
+      }
+      throw new Error('Failed to fetch provider');
+    }
   },
 
   createProvider: async (providerData: any) => {
-    const response = await api.post('/providers', providerData);
-    return response.data;
+    // Validate required fields
+    if (!providerData.business_name || !providerData.contact_email) {
+      throw new Error('Business name and contact email are required');
+    }
+    
+    try {
+      const response = await api.post('/providers', providerData);
+      return response.data;
+    } catch (error: any) {
+      if (error.response?.data?.detail) {
+        throw new Error(error.response.data.detail);
+      }
+      throw new Error('Failed to create provider');
+    }
   },
 
   updateProvider: async (id: number, providerData: any) => {
-    const response = await api.put(`/providers/${id}`, providerData);
-    return response.data;
+    if (!id || id <= 0) {
+      throw new Error('Invalid provider ID');
+    }
+    
+    try {
+      const response = await api.put(`/providers/${id}`, providerData);
+      return response.data;
+    } catch (error: any) {
+      if (error.response?.status === 404) {
+        throw new Error('Provider not found');
+      }
+      if (error.response?.data?.detail) {
+        throw new Error(error.response.data.detail);
+      }
+      throw new Error('Failed to update provider');
+    }
   },
 
   deleteProvider: async (id: number) => {
-    const response = await api.delete(`/providers/${id}`);
-    return response.data;
+    if (!id || id <= 0) {
+      throw new Error('Invalid provider ID');
+    }
+    
+    try {
+      const response = await api.delete(`/providers/${id}`);
+      return response.data;
+    } catch (error: any) {
+      if (error.response?.status === 404) {
+        throw new Error('Provider not found');
+      }
+      throw new Error('Failed to delete provider');
+    }
   },
 };
 
 // Appointments API
 export const appointmentsAPI = {
-  getAppointments: async (params?: any) => {
-    const response = await api.get('/appointments', { params });
-    return response.data;
+  getAppointments: async (params?: { skip?: number; limit?: number; provider_id?: number }) => {
+    try {
+      const response = await api.get('/appointments', { params });
+      return response.data;
+    } catch (error: any) {
+      throw new Error('Failed to fetch appointments');
+    }
   },
 
   getAppointment: async (id: number) => {
-    const response = await api.get(`/appointments/${id}`);
-    return response.data;
+    if (!id || id <= 0) {
+      throw new Error('Invalid appointment ID');
+    }
+    
+    try {
+      const response = await api.get(`/appointments/${id}`);
+      return response.data;
+    } catch (error: any) {
+      if (error.response?.status === 404) {
+        throw new Error('Appointment not found');
+      }
+      throw new Error('Failed to fetch appointment');
+    }
   },
 
   createAppointment: async (appointmentData: any) => {
-    const response = await api.post('/appointments', appointmentData);
-    return response.data;
+    try {
+      const response = await api.post('/appointments', appointmentData);
+      return response.data;
+    } catch (error: any) {
+      if (error.response?.data?.detail) {
+        throw new Error(error.response.data.detail);
+      }
+      throw new Error('Failed to create appointment');
+    }
   },
 
   updateAppointment: async (id: number, appointmentData: any) => {
-    const response = await api.put(`/appointments/${id}`, appointmentData);
-    return response.data;
+    if (!id || id <= 0) {
+      throw new Error('Invalid appointment ID');
+    }
+    
+    try {
+      const response = await api.put(`/appointments/${id}`, appointmentData);
+      return response.data;
+    } catch (error: any) {
+      if (error.response?.status === 404) {
+        throw new Error('Appointment not found');
+      }
+      throw new Error('Failed to update appointment');
+    }
   },
 
   deleteAppointment: async (id: number) => {
-    const response = await api.delete(`/appointments/${id}`);
-    return response.data;
+    if (!id || id <= 0) {
+      throw new Error('Invalid appointment ID');
+    }
+    
+    try {
+      const response = await api.delete(`/appointments/${id}`);
+      return response.data;
+    } catch (error: any) {
+      if (error.response?.status === 404) {
+        throw new Error('Appointment not found');
+      }
+      throw new Error('Failed to delete appointment');
+    }
   },
 };
 
 // Queues API
 export const queuesAPI = {
-  getQueues: async (providerId?: number) => {
-    const params = providerId ? { provider_id: providerId } : {};
-    const response = await api.get('/queues', { params });
-    return response.data;
+  getQueues: async (params?: { skip?: number; limit?: number; provider_id?: number }) => {
+    try {
+      const response = await api.get('/queues', { params });
+      return response.data;
+    } catch (error: any) {
+      throw new Error('Failed to fetch queues');
+    }
   },
 
   getQueue: async (id: number) => {
-    const response = await api.get(`/queues/${id}`);
-    return response.data;
+    if (!id || id <= 0) {
+      throw new Error('Invalid queue ID');
+    }
+    
+    try {
+      const response = await api.get(`/queues/${id}`);
+      return response.data;
+    } catch (error: any) {
+      if (error.response?.status === 404) {
+        throw new Error('Queue not found');
+      }
+      throw new Error('Failed to fetch queue');
+    }
   },
 
   createQueue: async (queueData: any) => {
-    const response = await api.post('/queues', queueData);
-    return response.data;
+    try {
+      const response = await api.post('/queues', queueData);
+      return response.data;
+    } catch (error: any) {
+      if (error.response?.data?.detail) {
+        throw new Error(error.response.data.detail);
+      }
+      throw new Error('Failed to create queue');
+    }
   },
 
   updateQueue: async (id: number, queueData: any) => {
-    const response = await api.put(`/queues/${id}`, queueData);
-    return response.data;
+    if (!id || id <= 0) {
+      throw new Error('Invalid queue ID');
+    }
+    
+    try {
+      const response = await api.put(`/queues/${id}`, queueData);
+      return response.data;
+    } catch (error: any) {
+      if (error.response?.status === 404) {
+        throw new Error('Queue not found');
+      }
+      throw new Error('Failed to update queue');
+    }
   },
 
   deleteQueue: async (id: number) => {
-    const response = await api.delete(`/queues/${id}`);
-    return response.data;
-  },
-
-  // Queue Entries
-  getQueueEntries: async (queueId: number) => {
-    const response = await api.get(`/queues/${queueId}/entries`);
-    return response.data;
-  },
-
-  addQueueEntry: async (queueId: number, entryData: any) => {
-    const response = await api.post(`/queues/${queueId}/entries`, entryData);
-    return response.data;
-  },
-
-  updateQueueEntry: async (queueId: number, entryId: number, entryData: any) => {
-    const response = await api.put(`/queues/${queueId}/entries/${entryId}`, entryData);
-    return response.data;
-  },
-
-  removeQueueEntry: async (queueId: number, entryId: number) => {
-    const response = await api.delete(`/queues/${queueId}/entries/${entryId}`);
-    return response.data;
-  },
-};
-
-// PWA API
-export const pwaAPI = {
-  getPWAConfig: async (providerId: number) => {
-    const response = await api.get(`/pwa/config/${providerId}`);
-    return response.data;
-  },
-
-  updatePWAConfig: async (providerId: number, configData: any) => {
-    const response = await api.put(`/pwa/config/${providerId}`, configData);
-    return response.data;
-  },
-
-  generatePWA: async (providerId: number) => {
-    const response = await api.post(`/pwa/generate/${providerId}`);
-    return response.data;
+    if (!id || id <= 0) {
+      throw new Error('Invalid queue ID');
+    }
+    
+    try {
+      const response = await api.delete(`/queues/${id}`);
+      return response.data;
+    } catch (error: any) {
+      if (error.response?.status === 404) {
+        throw new Error('Queue not found');
+      }
+      throw new Error('Failed to delete queue');
+    }
   },
 };
 

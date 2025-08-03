@@ -28,4 +28,16 @@ class UserResponse(BaseModel):
     created_at: datetime
     
     class Config:
-        from_attributes = True 
+        from_attributes = True
+
+class RegistrationResponse(BaseModel):
+    message: str
+    user_id: int
+    organization_id: int
+
+class ProviderRegistrationResponse(BaseModel):
+    message: str
+    user_id: int
+    organization_id: int
+    provider_id: int
+    business_name: str 

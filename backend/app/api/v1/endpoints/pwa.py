@@ -2,9 +2,9 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import List
 
-from backend.app.core.database import get_db
-from backend.app.models.pwa_config import PWAConfig
-from backend.app.schemas.pwa import PWAConfigCreate, PWAConfigUpdate, PWAConfigResponse
+from app.core.database import get_db
+from app.models.pwa_config import PWAConfig
+from app.schemas.pwa import PWAConfigCreate, PWAConfigUpdate, PWAConfigResponse
 
 router = APIRouter()
 

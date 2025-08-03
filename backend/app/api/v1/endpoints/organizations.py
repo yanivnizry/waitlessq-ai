@@ -1,11 +1,11 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from typing import List
-from backend.app.core.database import get_db
-from backend.app.core.tenant import get_current_tenant, require_role, TenantContext
-from backend.app.models.organization import Organization
-from backend.app.models.user import User
-from backend.app.schemas.organization import (
+from app.core.database import get_db
+from app.core.tenant import get_current_tenant, require_role, TenantContext
+from app.models.organization import Organization
+from app.models.user import User
+from app.schemas.organization import (
     OrganizationCreate,
     OrganizationUpdate,
     OrganizationResponse,

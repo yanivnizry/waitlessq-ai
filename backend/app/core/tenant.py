@@ -2,9 +2,9 @@ from fastapi import Request, HTTPException, Depends
 from sqlalchemy.orm import Session
 from typing import Optional
 import re
-from backend.app.core.database import get_db
-from backend.app.models.organization import Organization
-from backend.app.models.user import User
+from app.core.database import get_db
+from app.models.organization import Organization
+from app.models.user import User
 
 class TenantContext:
     """Context for current tenant/organization"""

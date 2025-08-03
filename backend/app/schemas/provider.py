@@ -21,8 +21,6 @@ class ProviderCreate(BaseModel):
     logo_url: Optional[str] = None
     primary_color: str = "#3B82F6"
     secondary_color: str = "#1F2937"
-    pwa_subdomain: Optional[str] = None
-    custom_domain: Optional[str] = None
 
 class ProviderUpdate(BaseModel):
     business_name: Optional[str] = None
@@ -43,11 +41,10 @@ class ProviderUpdate(BaseModel):
     logo_url: Optional[str] = None
     primary_color: Optional[str] = None
     secondary_color: Optional[str] = None
-    pwa_subdomain: Optional[str] = None
-    custom_domain: Optional[str] = None
 
 class ProviderResponse(BaseModel):
     id: int
+    organization_id: int
     user_id: int
     business_name: str
     business_description: Optional[str] = None
@@ -68,8 +65,6 @@ class ProviderResponse(BaseModel):
     logo_url: Optional[str] = None
     primary_color: str
     secondary_color: str
-    pwa_subdomain: Optional[str] = None
-    custom_domain: Optional[str] = None
     created_at: datetime
     updated_at: Optional[datetime] = None
 

@@ -2,7 +2,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import QueuePool
-from backend.app.core.config import settings
+from app.core.config import settings
 import logging
 
 logger = logging.getLogger(__name__)
@@ -24,9 +24,8 @@ def create_database_engine(url: str, is_read_replica: bool = False):
         echo=False,         # Set to True for SQL query logging in development
         echo_pool=False,    # Set to True for connection pool logging
         connect_args={
-            "connect_timeout": 10,
             "application_name": "waitlessq_backend"
-        }
+        } if "postgresql" in url else {}
     )
 
 # Primary database for writes

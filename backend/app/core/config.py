@@ -8,8 +8,8 @@ class Settings(BaseSettings):
     ENVIRONMENT: str = "development"
     DEBUG: bool = False
     
-    # Database
-    DATABASE_URL: str = "postgresql://waitlessq_user:secure_password@localhost:5432/waitlessq"
+    # Database - Use SQLite for development, PostgreSQL for production
+    DATABASE_URL: str = "sqlite:///./waitlessq.db" if os.getenv("ENVIRONMENT", "development") == "development" else "postgresql://waitlessq_user:waitlessq_password@localhost:5432/waitlessq"
     READ_DATABASE_URL: Optional[str] = None  # Read replica URL
     
     # Redis
@@ -111,4 +111,6 @@ if settings.is_production:
     if settings.JWT_SECRET == "your-jwt-secret-key-change-in-production":
         raise ValueError("JWT_SECRET must be set in production environment")
     if not settings.CORS_ORIGINS:
-        raise ValueError("CORS_ORIGINS must be configured in production environment") 
+        raise ValueError("CORS_ORIGINS must be configured in production environment")
+    if "sqlite" in settings.DATABASE_URL.lower():
+        raise ValueError("SQLite is not allowed in production. Use PostgreSQL.") 

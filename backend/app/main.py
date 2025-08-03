@@ -5,10 +5,11 @@ from fastapi.middleware.trustedhost import TrustedHostMiddleware
 import os
 import logging
 
-from backend.app.core.config import settings
-from backend.app.api.v1.api import api_router
-from backend.app.core.database import primary_engine
-from backend.app.models import Base
+from app.core.config import settings
+from app.api.v1.api import api_router
+from app.core.database import primary_engine
+from app.models import Base
+from app.core.middleware import RateLimitMiddleware, SecurityMiddleware
 
 # Configure logging
 logging.basicConfig(
@@ -35,16 +36,26 @@ if settings.is_production:
         allowed_hosts=["api.yourdomain.com", "*.yourdomain.com"]
     )
 
+# Add security middleware
+app.add_middleware(SecurityMiddleware)
+
+# Add rate limiting middleware
+app.add_middleware(RateLimitMiddleware)
+
 # CORS middleware - Environment-aware configuration
 cors_origins = settings.CORS_ORIGINS
 if settings.is_development and not cors_origins:
-    # Default development origins
+    # Default development origins - ONLY for development
     cors_origins = [
         "http://localhost:3000",
         "http://localhost:3001",
         "http://127.0.0.1:3000",
         "http://127.0.0.1:3001"
     ]
+
+# In production, CORS_ORIGINS must be explicitly set
+if settings.is_production and not cors_origins:
+    raise ValueError("CORS_ORIGINS must be configured in production environment")
 
 app.add_middleware(
     CORSMiddleware,

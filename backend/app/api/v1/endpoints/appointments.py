@@ -2,16 +2,27 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import List
 
-from backend.app.core.database import get_db
-from backend.app.models.appointment import Appointment
-from backend.app.schemas.appointment import AppointmentCreate, AppointmentUpdate, AppointmentResponse
+from app.core.database import get_db
+from app.models.appointment import Appointment
+from app.models.user import User
+from app.schemas.appointment import AppointmentCreate, AppointmentUpdate, AppointmentResponse
+from app.services.auth import get_current_user
 
 router = APIRouter()
 
 @router.get("/", response_model=List[AppointmentResponse])
-async def get_appointments(db: Session = Depends(get_db)):
-    """Get all appointments"""
-    appointments = db.query(Appointment).all()
+async def get_appointments(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Get all appointments for the current user's organization"""
+    # Get providers for the current user's organization
+    from app.models.provider import Provider
+    providers = db.query(Provider).filter(Provider.organization_id == current_user.organization_id).all()
+    provider_ids = [p.id for p in providers]
+    
+    # Get appointments for those providers
+    appointments = db.query(Appointment).filter(Appointment.provider_id.in_(provider_ids)).all()
     return appointments
 
 @router.get("/{appointment_id}", response_model=AppointmentResponse)

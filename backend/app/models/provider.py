@@ -1,7 +1,7 @@
 from sqlalchemy import Column, Integer, String, Boolean, DateTime, Text, JSON, ForeignKey
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
-from backend.app.core.database import Base
+from app.core.database import Base
 
 class Provider(Base):
     __tablename__ = "providers"
@@ -67,6 +67,7 @@ class Provider(Base):
     user = relationship("User", back_populates="providers")
     appointments = relationship("Appointment", back_populates="provider")
     queues = relationship("Queue", back_populates="provider")
+    pwa_config = relationship("PWAConfig", back_populates="provider", uselist=False)
     
     def __repr__(self):
         return f"<Provider(id={self.id}, business_name='{self.business_name}', organization_id={self.organization_id})>" 

@@ -2,7 +2,7 @@ from sqlalchemy import Column, Integer, String, Boolean, DateTime, Text, Foreign
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
 import enum
-from backend.app.core.database import Base
+from app.core.database import Base
 
 class QueueStatus(str, enum.Enum):
     ACTIVE = "active"

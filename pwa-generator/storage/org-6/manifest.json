@@ -10,6 +10,18 @@
   "background_color": "#ffffff",
   "icons": [
     {
+      "src": "blob:http://localhost:3000/d937d1b3-01dd-4124-b510-1137d9a28ba6",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "blob:http://localhost:3000/d937d1b3-01dd-4124-b510-1137d9a28ba6",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
       "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><rect width='192' height='192' fill='%23404045' rx='24'/><text x='96' y='120' font-size='80' text-anchor='middle' fill='white'>\ud83d\udcf1</text></svg>",
       "sizes": "192x192",
       "type": "image/svg+xml"

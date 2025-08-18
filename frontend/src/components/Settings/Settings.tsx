@@ -86,6 +86,12 @@ export function Settings() {
   
   const queryClient = useQueryClient()
 
+  // Fetch current PWA configuration
+  const { data: existingConfig, isLoading: configLoading } = useQuery({
+    queryKey: ['pwa-config'],
+    queryFn: () => api.pwa.getConfig(),
+  })
+
   // Default PWA configuration
   const [pwaConfig, setPwaConfig] = useState<PWAConfig>({
     app_name: '',
@@ -156,6 +162,32 @@ export function Settings() {
           errorMessage = detail
         } else {
           errorMessage = 'Validation error occurred'
+        }
+      }
+      
+      toast.error(errorMessage)
+    }
+  })
+
+  // Save PWA config mutation
+  const savePWAConfigMutation = useMutation({
+    mutationFn: (configData: any) => api.pwa.saveConfig(configData),
+    onSuccess: () => {
+      toast.success('PWA configuration saved successfully!')
+      queryClient.invalidateQueries({ queryKey: ['pwa-config'] })
+    },
+    onError: (error: any) => {
+      console.error('PWA save error:', error)
+      let errorMessage = 'Failed to save PWA configuration'
+      
+      if (error.response?.data?.detail) {
+        const detail = error.response.data.detail
+        if (Array.isArray(detail)) {
+          errorMessage = detail.map((err: any) => 
+            typeof err === 'object' && err.msg ? err.msg : String(err)
+          ).join(', ')
+        } else if (typeof detail === 'string') {
+          errorMessage = detail
         }
       }
       
@@ -441,13 +473,29 @@ export function Settings() {
                         <Input
                           type="file"
                           accept="image/*"
-                          onChange={(e) => {
+                          onChange={async (e) => {
                             const file = e.target.files?.[0];
                             if (file) {
-                              // Create a preview URL for the uploaded file
-                              const url = URL.createObjectURL(file);
-                              setPwaConfig({ ...pwaConfig, icon_url: url });
-                              // TODO: In production, upload to server and get permanent URL
+                              try {
+                                // Create a preview URL for immediate display
+                                const previewUrl = URL.createObjectURL(file);
+                                setPwaConfig({ ...pwaConfig, icon_url: previewUrl });
+                                
+                                // Upload file to server
+                                const uploadResult = await api.pwa.uploadIcon(file);
+                                
+                                // Update with permanent URL
+                                const permanentUrl = `http://localhost:8000${uploadResult.url}`;
+                                setPwaConfig({ ...pwaConfig, icon_url: permanentUrl });
+                                
+                                // Clean up preview URL
+                                URL.revokeObjectURL(previewUrl);
+                                
+                                toast.success('Icon uploaded successfully!');
+                              } catch (error) {
+                                console.error('Upload failed:', error);
+                                toast.error('Failed to upload icon');
+                              }
                             }
                           }}
                           className="hidden"

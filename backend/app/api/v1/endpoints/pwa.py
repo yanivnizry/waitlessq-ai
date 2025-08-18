@@ -1,8 +1,12 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File
+from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 from typing import List, Optional
 import httpx
 import os
+import shutil
+from pathlib import Path
+import uuid
 
 from app.core.database import get_db
 from app.services.auth import get_current_user
@@ -145,6 +149,57 @@ async def delete_pwa_config(
     db.delete(config)
     db.commit()
     return {"message": "PWA configuration deleted successfully"}
+
+@router.post("/upload-icon")
+async def upload_icon(
+    file: UploadFile = File(...),
+    current_user: User = Depends(get_current_user)
+):
+    """Upload PWA icon file"""
+    
+    # Validate file type
+    if not file.content_type or not file.content_type.startswith('image/'):
+        raise HTTPException(status_code=400, detail="File must be an image")
+    
+    # Validate file size (5MB max)
+    if file.size and file.size > 5 * 1024 * 1024:
+        raise HTTPException(status_code=400, detail="File size must be less than 5MB")
+    
+    # Create upload directory
+    upload_dir = Path("uploads/pwa-icons")
+    upload_dir.mkdir(parents=True, exist_ok=True)
+    
+    # Generate unique filename
+    file_extension = Path(file.filename).suffix if file.filename else '.png'
+    unique_filename = f"{uuid.uuid4()}{file_extension}"
+    file_path = upload_dir / unique_filename
+    
+    try:
+        # Save file
+        with open(file_path, "wb") as buffer:
+            shutil.copyfileobj(file.file, buffer)
+        
+        # Return the URL for the uploaded file
+        file_url = f"/api/v1/pwa/icons/{unique_filename}"
+        
+        return {
+            "success": True,
+            "url": file_url,
+            "filename": unique_filename
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to upload file: {str(e)}")
+
+@router.get("/icons/{filename}")
+async def serve_icon(filename: str):
+    """Serve uploaded PWA icon files"""
+    file_path = Path("uploads/pwa-icons") / filename
+    
+    if not file_path.exists():
+        raise HTTPException(status_code=404, detail="Icon not found")
+    
+    return FileResponse(file_path)
 
 @router.post("/generate")
 async def generate_pwa(

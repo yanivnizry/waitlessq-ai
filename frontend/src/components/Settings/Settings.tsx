@@ -163,9 +163,8 @@ export function Settings() {
   const generatePWAMutation = useMutation({
     mutationFn: () => api.pwa.generatePWA(),
     onSuccess: (data) => {
-      toast.success('PWA generated successfully!')
       setPwaGenerationResult(data)
-      setShowPreview(true)
+      // URLs will now show directly in the preview box
     },
     onError: (error: any) => {
       toast.error(error.response?.data?.detail || 'Failed to generate PWA')
@@ -253,72 +252,7 @@ export function Settings() {
           </div>
         </div>
 
-        {/* PWA Preview URLs */}
-        {pwaGenerationResult && (
-          <div className="bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 rounded-lg p-6 border border-green-200 dark:border-green-800">
-            <div className="flex items-center gap-2 mb-4">
-              <CheckCircle className="h-5 w-5 text-green-600" />
-              <h3 className="text-lg font-semibold text-green-800 dark:text-green-200">PWA Generated Successfully!</h3>
-            </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Standard URL:</label>
-                <div className="flex items-center gap-2">
-                  <code className="flex-1 px-3 py-2 bg-white dark:bg-gray-800 rounded border text-sm">
-                    {pwaGenerationResult.full_url}
-                  </code>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => window.open(pwaGenerationResult.full_url, '_blank')}
-                  >
-                    <ExternalLink className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-              
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Subdomain Preview:</label>
-                <div className="flex items-center gap-2">
-                  <code className="flex-1 px-3 py-2 bg-white dark:bg-gray-800 rounded border text-sm">
-                    {pwaGenerationResult.subdomain_preview}
-                  </code>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      navigator.clipboard.writeText(pwaGenerationResult.subdomain_url)
-                      setCopied(true)
-                      setTimeout(() => setCopied(false), 2000)
-                      toast.success('Subdomain URL copied to clipboard!')
-                    }}
-                  >
-                    {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-                  </Button>
-                </div>
-              </div>
-            </div>
-            
-            <div className="mt-4 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
-              <div className="flex items-start gap-2">
-                <Globe className="h-5 w-5 text-blue-600 mt-0.5" />
-                <div className="space-y-2">
-                  <p className="text-sm font-medium text-blue-800 dark:text-blue-200">Local Development Setup:</p>
-                  <p className="text-xs text-blue-700 dark:text-blue-300">
-                    To test the subdomain locally, add this to your <code>/etc/hosts</code> file:
-                  </p>
-                  <code className="block text-xs bg-blue-100 dark:bg-blue-900/40 p-2 rounded border">
-                    127.0.0.1   {pwaGenerationResult.subdomain_preview?.split(':')[0]}
-                  </code>
-                  <p className="text-xs text-blue-700 dark:text-blue-300">
-                    Then visit: <strong>{pwaGenerationResult.subdomain_url}</strong>
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
+
 
         {/* Tab Navigation */}
         <div className="border-b border-muted">
@@ -558,21 +492,74 @@ export function Settings() {
                       </p>
                     </div>
                     
-                    {showPreview && (
-                      <div className="space-y-2">
-                        <div className="flex items-center gap-2 p-2 bg-background rounded border">
-                          <code className="flex-1 text-xs">https://your-pwa-url.com</code>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => copyToClipboard('https://your-pwa-url.com')}
-                          >
-                            {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-                          </Button>
-                          <Button size="sm" variant="ghost">
-                            <ExternalLink className="h-4 w-4" />
-                          </Button>
+                    {pwaGenerationResult && (
+                      <div className="space-y-3">
+                        <div className="space-y-2">
+                          <label className="text-xs font-medium text-muted-foreground">Standard URL:</label>
+                          <div className="flex items-center gap-2 p-2 bg-background rounded border">
+                            <code className="flex-1 text-xs">{pwaGenerationResult.full_url}</code>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => copyToClipboard(pwaGenerationResult.full_url)}
+                            >
+                              {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                            </Button>
+                            <Button 
+                              size="sm" 
+                              variant="ghost"
+                              onClick={() => window.open(pwaGenerationResult.full_url, '_blank')}
+                            >
+                              <ExternalLink className="h-4 w-4" />
+                            </Button>
+                          </div>
                         </div>
+                        
+                        <div className="space-y-2">
+                          <label className="text-xs font-medium text-muted-foreground">Subdomain Preview:</label>
+                          <div className="flex items-center gap-2 p-2 bg-background rounded border">
+                            <code className="flex-1 text-xs">{pwaGenerationResult.subdomain_preview}</code>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => copyToClipboard(pwaGenerationResult.subdomain_url)}
+                            >
+                              {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                            </Button>
+                            <Button 
+                              size="sm" 
+                              variant="ghost"
+                              onClick={() => window.open(pwaGenerationResult.subdomain_url, '_blank')}
+                            >
+                              <ExternalLink className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </div>
+                        
+                        {pwaGenerationResult.subdomain_preview && (
+                          <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                            <div className="flex items-center gap-2 mb-2">
+                              <Globe className="h-4 w-4 text-blue-600" />
+                              <span className="text-sm font-medium text-blue-800 dark:text-blue-200">Local Development Setup:</span>
+                            </div>
+                            <p className="text-xs text-blue-700 dark:text-blue-300 mb-2">
+                              To test the subdomain locally, add this to your <code>/etc/hosts</code> file:
+                            </p>
+                            <code className="block text-xs bg-blue-100 dark:bg-blue-900/40 p-2 rounded border">
+                              127.0.0.1 {pwaGenerationResult.subdomain_preview.replace(':8001', '')}
+                            </code>
+                            <p className="text-xs text-blue-700 dark:text-blue-300 mt-2">
+                              Then visit: <a 
+                                href={`http://${pwaGenerationResult.subdomain_preview}`} 
+                                target="_blank" 
+                                rel="noopener noreferrer"
+                                className="underline hover:text-blue-800"
+                              >
+                                http://{pwaGenerationResult.subdomain_preview}
+                              </a>
+                            </p>
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>

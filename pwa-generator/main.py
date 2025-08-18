@@ -134,12 +134,15 @@ async def generate_pwa(organization_id: int, pwa_type: str = "client"):
             org_subdomain = f"org-{organization_id}"
             subdomain_url = f"http://{org_subdomain}.localhost:8001"
             
+            # Get PWA generator base URL
+            pwa_base_url = os.getenv("PWA_BASE_URL", "http://localhost:8001")
+            
             return {
                 "organization_id": organization_id,
                 "pwa_url": pwa_url,
                 "pwa_type": pwa_type,
                 "status": "generated",
-                "full_url": f"{backend_url}{pwa_url}",
+                "full_url": f"{pwa_base_url}{pwa_url}",
                 "subdomain_url": subdomain_url,
                 "subdomain_preview": f"{org_subdomain}.localhost:8001"
             }

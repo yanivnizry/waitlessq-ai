@@ -1,9 +1,9 @@
-const CACHE_NAME = 'waitlessq-6-1755547350';
-const API_CACHE_NAME = 'waitlessq-6-1755547350-api';
+const CACHE_NAME = 'waitlessq-6-1755548101';
+const API_CACHE_NAME = 'waitlessq-6-1755548101-api';
 const urlsToCache = [
   './',
-  'client-styles.css?v=1755547350',
-  'client-app.js?v=1755547350',
+  'client-styles.css?v=1755548101',
+  'client-app.js?v=1755548101',
   'manifest.json',
   'https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap',
   'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css'

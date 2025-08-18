@@ -67,17 +67,27 @@ class PWAGenerator:
         # Use custom icon if provided
         if pwa_config and pwa_config.get("icon_url"):
             icon_url = pwa_config["icon_url"]
+            
+            # Detect icon type from URL
+            icon_type = "image/png"  # default
+            if icon_url.lower().endswith('.ico'):
+                icon_type = "image/x-icon"
+            elif icon_url.lower().endswith('.jpg') or icon_url.lower().endswith('.jpeg'):
+                icon_type = "image/jpeg"
+            elif icon_url.lower().endswith('.svg'):
+                icon_type = "image/svg+xml"
+            
             icons.extend([
                 {
                     "src": icon_url,
                     "sizes": "192x192",
-                    "type": "image/png",
+                    "type": icon_type,
                     "purpose": "any maskable"
                 },
                 {
                     "src": icon_url,
                     "sizes": "512x512",
-                    "type": "image/png",
+                    "type": icon_type,
                     "purpose": "any maskable"
                 }
             ])

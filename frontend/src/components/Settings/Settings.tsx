@@ -141,9 +141,11 @@ export function Settings() {
   // Save PWA configuration mutation
   const savePWAConfigMutation = useMutation({
     mutationFn: (config: PWAConfig) => {
+      console.log('🔧 Mutation triggered, sending config:', config)
       return api.pwa.saveConfig(config)
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      console.log('🔧 Save successful, response:', data)
       toast.success('PWA configuration saved successfully!')
       queryClient.invalidateQueries({ queryKey: ['pwa-config'] })
     },
@@ -182,6 +184,7 @@ export function Settings() {
   })
 
   const handleSave = () => {
+    console.log('🔧 Save button clicked, config to save:', pwaConfig)
     savePWAConfigMutation.mutate(pwaConfig)
   }
 

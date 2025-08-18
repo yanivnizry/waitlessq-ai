@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { toast } from 'sonner'
 import { motion } from 'framer-motion'
 import { 
   Users, 
@@ -11,7 +12,12 @@ import {
   Calendar,
   Search,
   User,
-  Clock
+  Clock,
+  Send,
+  Shield,
+  CheckCircle,
+  XCircle,
+  RefreshCw
 } from 'lucide-react'
 import { Button } from '../ui/button'
 import { Input } from '../ui/input'
@@ -31,6 +37,13 @@ interface Client {
   next_appointment?: string
   created_at: string
   updated_at?: string
+  
+  // Account and invitation fields
+  has_account: boolean
+  invitation_sent_at?: string
+  invitation_expires_at?: string
+  account_created_at?: string
+  last_login_at?: string
 }
 
 interface ClientFormData {
@@ -51,63 +64,106 @@ export function Clients() {
     notes: "",
   })
 
-  // const queryClient = useQueryClient() // Will be used when backend API is ready
-
-  // Fetch clients (using appointments data for now since we don't have a dedicated clients endpoint)
-  const { data: appointments, isLoading, error } = useQuery({
-    queryKey: ["appointments"],
-    queryFn: () => api.appointments.getAll(),
+  const queryClient = useQueryClient()
+  
+  // Invitation mutations
+  const sendInvitationMutation = useMutation({
+    mutationFn: (clientId: number) => api.clients.sendInvitation(clientId),
+    onSuccess: (data) => {
+      toast.success(data.message || 'Invitation sent successfully!')
+      queryClient.invalidateQueries({ queryKey: ['clients'] })
+    },
+    onError: (error: any) => {
+      toast.error(error.response?.data?.detail || 'Failed to send invitation')
+    },
   })
 
-  // Extract unique clients from appointments
+  const resendInvitationMutation = useMutation({
+    mutationFn: (clientId: number) => api.clients.resendInvitation(clientId),
+    onSuccess: (data) => {
+      toast.success(data.message || 'Invitation resent successfully!')
+      queryClient.invalidateQueries({ queryKey: ['clients'] })
+    },
+    onError: (error: any) => {
+      toast.error(error.response?.data?.detail || 'Failed to resend invitation')
+    },
+  })
+
+  // Create client mutation
+  const createClientMutation = useMutation({
+    mutationFn: (clientData: any) => api.clients.create(clientData),
+    onSuccess: (data) => {
+      toast.success('Client created successfully!')
+      queryClient.invalidateQueries({ queryKey: ['clients'] })
+      resetForm()
+      setShowForm(false)
+    },
+    onError: (error: any) => {
+      toast.error(error.response?.data?.detail || 'Failed to create client')
+    },
+  })
+
+  // Update client mutation
+  const updateClientMutation = useMutation({
+    mutationFn: ({ id, data }: { id: number, data: any }) => api.clients.update(id, data),
+    onSuccess: (data) => {
+      toast.success('Client updated successfully!')
+      queryClient.invalidateQueries({ queryKey: ['clients'] })
+      resetForm()
+      setShowForm(false)
+      setEditingClient(null)
+    },
+    onError: (error: any) => {
+      toast.error(error.response?.data?.detail || 'Failed to update client')
+    },
+  })
+
+  // Delete client mutation
+  const deleteClientMutation = useMutation({
+    mutationFn: (clientId: number) => api.clients.delete(clientId),
+    onSuccess: () => {
+      toast.success('Client deleted successfully!')
+      queryClient.invalidateQueries({ queryKey: ['clients'] })
+    },
+    onError: (error: any) => {
+      toast.error(error.response?.data?.detail || 'Failed to delete client')
+    },
+  })
+
+  // Fetch clients from the dedicated clients API
+  const { data: clientsResponse, isLoading, error } = useQuery({
+    queryKey: ["clients"],
+    queryFn: () => api.clients.getAll({ page: 1, per_page: 100, is_active: true }),
+  })
+
+  // Process clients data to ensure all required fields are present
   const clients = React.useMemo(() => {
-    if (!appointments) return []
+    if (!clientsResponse?.clients) return []
     
-    const clientMap = new Map<string, Client>()
-    
-    appointments.forEach((appointment: any) => {
-      const key = appointment.client_email || appointment.client_name
-      if (clientMap.has(key)) {
-        const existing = clientMap.get(key)!
-        existing.total_appointments++
-        // Update last appointment if this one is more recent
-        if (new Date(appointment.scheduled_at) > new Date(existing.last_appointment || '1900-01-01')) {
-          existing.last_appointment = appointment.scheduled_at
-        }
-        // Update next appointment if this one is upcoming
-        if (appointment.status === 'scheduled' || appointment.status === 'confirmed') {
-          if (!existing.next_appointment || new Date(appointment.scheduled_at) < new Date(existing.next_appointment)) {
-            existing.next_appointment = appointment.scheduled_at
-          }
-        }
-      } else {
-        clientMap.set(key, {
-          id: appointment.id, // Using appointment ID as client ID for now
-          name: appointment.client_name,
-          email: appointment.client_email,
-          phone: appointment.client_phone,
-          notes: appointment.client_notes || appointment.special_requests,
-          total_appointments: 1,
-          last_appointment: appointment.scheduled_at,
-          next_appointment: (appointment.status === 'scheduled' || appointment.status === 'confirmed') 
-            ? appointment.scheduled_at 
-            : undefined,
-          created_at: appointment.created_at,
-        })
-      }
-    })
-    
-    return Array.from(clientMap.values()).sort((a, b) => 
-      new Date(b.last_appointment || b.created_at).getTime() - 
-      new Date(a.last_appointment || a.created_at).getTime()
-    )
-  }, [appointments])
+    return clientsResponse.clients.map((client: any) => ({
+      ...client,
+      // Ensure invitation fields have default values
+      has_account: client.has_account || false,
+      invitation_sent_at: client.invitation_sent_at || null,
+      invitation_expires_at: client.invitation_expires_at || null,
+      account_created_at: client.account_created_at || null,
+      last_login_at: client.last_login_at || null,
+    }))
+  }, [clientsResponse])
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    // For now, we'll just show a message since we don't have a dedicated clients API
-    alert('Client management will be fully implemented when the backend clients API is ready!')
-    resetForm()
+    
+    if (editingClient) {
+      // Update existing client
+      updateClientMutation.mutate({
+        id: editingClient.id,
+        data: formData
+      })
+    } else {
+      // Create new client
+      createClientMutation.mutate(formData)
+    }
   }
 
   const handleEdit = (client: Client) => {
@@ -123,7 +179,47 @@ export function Clients() {
 
   const handleDelete = (id: number) => {
     if (window.confirm("Are you sure you want to delete this client? This will not delete their appointments.")) {
-      alert('Client deletion will be implemented when the backend clients API is ready!')
+      deleteClientMutation.mutate(id)
+    }
+  }
+
+  const handleSendInvitation = (client: Client) => {
+    if (!client.email) {
+      toast.error('Client must have an email address to receive an invitation')
+      return
+    }
+    
+    if (client.has_account) {
+      toast.info('Client already has an account')
+      return
+    }
+    
+    sendInvitationMutation.mutate(client.id)
+  }
+
+  const handleResendInvitation = (client: Client) => {
+    if (!client.email) {
+      toast.error('Client must have an email address to receive an invitation')
+      return
+    }
+    
+    resendInvitationMutation.mutate(client.id)
+  }
+
+  const getAccountStatus = (client: Client) => {
+    if (client.has_account) {
+      return { status: 'active', text: 'Has Account', icon: CheckCircle, color: 'text-green-600' }
+    } else if (client.invitation_sent_at) {
+      const expiry = client.invitation_expires_at ? new Date(client.invitation_expires_at) : null
+      const isExpired = expiry && expiry < new Date()
+      
+      if (isExpired) {
+        return { status: 'expired', text: 'Invitation Expired', icon: XCircle, color: 'text-red-600' }
+      } else {
+        return { status: 'invited', text: 'Invitation Sent', icon: Send, color: 'text-blue-600' }
+      }
+    } else {
+      return { status: 'not_invited', text: 'No Account', icon: User, color: 'text-gray-600' }
     }
   }
 
@@ -249,8 +345,18 @@ export function Clients() {
                   </div>
                 </div>
                 <div className="flex gap-2">
-                  <Button type="submit">
-                    {editingClient ? "Update Client" : "Add Client"}
+                  <Button 
+                    type="submit" 
+                    disabled={createClientMutation.isPending || updateClientMutation.isPending}
+                  >
+                    {createClientMutation.isPending || updateClientMutation.isPending ? (
+                      <>
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                        {editingClient ? "Updating..." : "Creating..."}
+                      </>
+                    ) : (
+                      editingClient ? "Update Client" : "Add Client"
+                    )}
                   </Button>
                   <Button
                     type="button"
@@ -331,21 +437,96 @@ export function Clients() {
                       </div>
                     </div>
                     <div className="flex gap-1">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => handleEdit(client)}
-                      >
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => handleDelete(client.id)}
-                        className="text-red-600 hover:text-red-700"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+                      {/* Account Status and Invitation Buttons */}
+                      {(() => {
+                        const accountStatus = getAccountStatus(client)
+                        const StatusIcon = accountStatus.icon
+                        
+                        return (
+                          <>
+                            {/* Account Status Indicator */}
+                            <div className="flex items-center gap-1 px-2 py-1 rounded-md bg-muted mr-2">
+                              <StatusIcon className={`h-3 w-3 ${accountStatus.color}`} />
+                              <span className={`text-xs font-medium ${accountStatus.color}`}>
+                                {accountStatus.text}
+                              </span>
+                            </div>
+                            
+                            {/* Invitation Buttons */}
+                            {client.email && !client.has_account && (
+                              <>
+                                {accountStatus.status === 'not_invited' && (
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => handleSendInvitation(client)}
+                                    disabled={sendInvitationMutation.isPending}
+                                    title="Send invitation"
+                                    className="text-blue-600 hover:text-blue-700"
+                                  >
+                                    <Send className="h-4 w-4" />
+                                  </Button>
+                                )}
+                                
+                                {(accountStatus.status === 'invited' || accountStatus.status === 'expired') && (
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => handleResendInvitation(client)}
+                                    disabled={resendInvitationMutation.isPending}
+                                    title="Resend invitation"
+                                    className="text-orange-600 hover:text-orange-700"
+                                  >
+                                    <RefreshCw className="h-4 w-4" />
+                                  </Button>
+                                )}
+                              </>
+                            )}
+                            
+                            {/* PWA Access Button for clients with accounts */}
+                            {client.has_account && (
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => {
+                                  // TODO: Open PWA for this client
+                                  toast.info('PWA access will be available soon')
+                                }}
+                                title="Open client PWA"
+                                className="text-green-600 hover:text-green-700"
+                              >
+                                <Shield className="h-4 w-4" />
+                              </Button>
+                            )}
+                            
+                            {/* Edit Button */}
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleEdit(client)}
+                              title="Edit client"
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                            
+                            {/* Delete Button */}
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleDelete(client.id)}
+                              disabled={deleteClientMutation.isPending}
+                              className="text-red-600 hover:text-red-700"
+                              title="Delete client"
+                            >
+                              {deleteClientMutation.isPending ? (
+                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-red-600"></div>
+                              ) : (
+                                <Trash2 className="h-4 w-4" />
+                              )}
+                            </Button>
+                          </>
+                        )
+                      })()}
                     </div>
                   </div>
                 </CardHeader>

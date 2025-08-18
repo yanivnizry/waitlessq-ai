@@ -19,12 +19,13 @@ import { useNavigate, useLocation } from "react-router-dom"
 import { Button } from "../ui/button"
 import { useAuthStore } from "../../store/auth-store"
 import { cn } from "../../lib/utils"
+import FloatingActionButton from "../ui/FloatingActionButton"
 
 interface LayoutProps {
   children: React.ReactNode
 }
 
-// Navigation updated at 2024-12-20 18:45 - ADDED GAMIFICATION - FORCE CACHE BREAK v5
+// Navigation updated at 2024-12-20 19:00 - ADDED QUICK APPOINTMENT - FORCE CACHE BREAK v6
 const navigation = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
   { name: "Calendar", href: "/calendar", icon: Calendar },
@@ -71,7 +72,7 @@ export function Layout({ children }: LayoutProps) {
             <div className="flex h-16 items-center justify-between px-4 border-b">
               <div className="flex items-center">
                 <h1 className="text-xl font-bold">WaitLessQ</h1>
-                <div className="ml-2 text-xs text-yellow-500">🏆 GAM v1.0</div>
+                <div className="ml-2 text-xs text-green-500">⚡ QUICK v1.0</div>
               </div>
               <Button
                 variant="ghost"
@@ -214,6 +215,9 @@ export function Layout({ children }: LayoutProps) {
           </div>
         </main>
       </div>
+      
+      {/* Floating Action Button */}
+      <FloatingActionButton />
     </div>
   )
 } 

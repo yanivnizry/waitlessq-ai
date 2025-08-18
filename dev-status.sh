@@ -55,7 +55,7 @@ check_pid_files() {
     print_status "Process Status:"
     
     local services=("backend" "frontend" "pwa-generator")
-    local ports=("8000" "3000" "5001")
+    local ports=("8000" "3000" "8001")
     local names=("Backend API" "Frontend" "PWA Generator")
     
     for i in "${!services[@]}"; do
@@ -96,7 +96,7 @@ main() {
         frontend_ok=true
     fi
     
-    if check_service "PWA Generator" "http://localhost:5001" "/health"; then
+    if check_service "PWA Generator" "http://localhost:8001" "/health"; then
         pwa_ok=true
     fi
     
@@ -107,7 +107,7 @@ main() {
     echo "📋 Access URLs:"
     echo "• Dashboard: http://localhost:3000"
     echo "• API Docs: http://localhost:8000/docs"
-    echo "• PWA Generator: http://localhost:5001"
+    echo "• PWA Generator: http://localhost:8001"
     echo ""
     
     # Summary

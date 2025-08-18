@@ -1,5 +1,10 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { authAPI } from '../services/api';
+import { 
+  startSessionMonitoring, 
+  stopSessionMonitoring, 
+  initializeSessionManagement 
+} from '../utils/session';
 
 interface User {
   id: number;
@@ -41,6 +46,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // Initialize session management
+    initializeSessionManagement();
+    
     // Check if user is logged in on app start
     const token = localStorage.getItem('token');
     if (token) {
@@ -71,6 +79,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       localStorage.setItem('token', response.access_token);
       authAPI.setToken(response.access_token);
       console.log('🔐 Verified stored token:', localStorage.getItem('token')?.substring(0, 50) + '...');
+      
+      // Start session monitoring after successful login
+      startSessionMonitoring();
+      
       await checkAuthStatus();
     } catch (error) {
       console.error('🔐 Login failed in AuthContext:', error);
@@ -87,6 +99,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const logout = () => {
+    console.log('🔐 Logging out user');
+    
+    // Stop session monitoring
+    stopSessionMonitoring();
+    
+    // Clear auth data
     localStorage.removeItem('token');
     authAPI.removeToken();
     setUser(null);

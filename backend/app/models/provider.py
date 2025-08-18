@@ -69,7 +69,6 @@ class Provider(Base):
     queues = relationship("Queue", back_populates="provider")
     services = relationship("Service", back_populates="provider")
     availability = relationship("Availability", back_populates="provider")
-    pwa_config = relationship("PWAConfig", back_populates="provider", uselist=False)
     office_locations = relationship("ProviderOfficeLocation", back_populates="provider")
     
     def __repr__(self):

@@ -1,4 +1,5 @@
-import axios, { AxiosInstance, AxiosResponse, InternalAxiosRequestConfig } from 'axios';
+import axios, { AxiosInstance, AxiosResponse, InternalAxiosRequestConfig } from 'axios'
+import { handleSessionExpiry } from '../utils/session';
 
 // Determine API base URL based on environment
 const getApiBaseUrl = (): string => {
@@ -65,17 +66,12 @@ api.interceptors.response.use(
   async (error: any) => {
     const originalRequest = error.config;
     
-    // Handle 401 Unauthorized
+    // Handle 401 Unauthorized (session expired)
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
       
-      // Clear invalid token
-      localStorage.removeItem('token');
-      
-      // Redirect to login
-      if (window.location.pathname !== '/login') {
-        window.location.href = '/login';
-      }
+      console.log('🔐 401 Unauthorized - handling session expiry');
+      handleSessionExpiry();
       
       return Promise.reject(error);
     }

@@ -4,15 +4,11 @@ import { motion, AnimatePresence } from 'framer-motion'
 import {
   Plus,
   Clock,
-  User,
-  Phone,
   X,
   Zap,
-  Calendar,
   Save
 } from 'lucide-react'
 import { Button } from '../ui/button'
-import { Input } from '../ui/input'
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card'
 import { api } from '../../lib/api-client'
 import { toast } from 'sonner'
@@ -27,8 +23,7 @@ const QUICK_SERVICES = [
 
 const QuickAddButton: React.FC = () => {
   const [showForm, setShowForm] = useState(false)
-  const [clientName, setClientName] = useState('')
-  const [clientPhone, setClientPhone] = useState('')
+  const [selectedClient, setSelectedClient] = useState<any>(null)
   const [selectedService, setSelectedService] = useState(QUICK_SERVICES[0])
   const [appointmentTime, setAppointmentTime] = useState(() => {
     // Default to next hour
@@ -51,6 +46,14 @@ const QuickAddButton: React.FC = () => {
     retry: false
   })
 
+  // Get clients for selection
+  const clientsQuery = useQuery({
+    queryKey: ['clients'],
+    queryFn: () => api.clients.getAll({ is_active: true }),
+    staleTime: 5 * 60 * 1000,
+    retry: false
+  })
+
   // Create appointment mutation
   const createAppointmentMutation = useMutation({
     mutationFn: (appointmentData: any) => api.appointments.create(appointmentData),
@@ -69,43 +72,80 @@ const QuickAddButton: React.FC = () => {
       toast.success(`🎉 ${selectedService.name} scheduled! +${20 + 15 + Math.floor(selectedService.price / 10)} points!`)
       
       // Reset form
-      setClientName('')
-      setClientPhone('')
+      setSelectedClient(null)
       setShowForm(false)
     },
     onError: (error: any) => {
       console.error('Failed to create appointment:', error)
-      toast.error('Failed to create appointment')
+      console.error('Error response:', error.response?.data)
+      console.error('Error status:', error.response?.status)
+      
+      if (error.response?.data?.detail) {
+        toast.error(`Failed to create appointment: ${error.response.data.detail}`)
+      } else if (error.response?.status === 401) {
+        toast.error('Authentication required. Please log in again.')
+      } else if (error.response?.status === 403) {
+        toast.error('You do not have permission to create appointments.')
+      } else {
+        toast.error('Failed to create appointment. Please try again.')
+      }
     }
   })
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
 
-    if (!clientName.trim()) {
-      toast.error('Client name is required')
+    if (!selectedClient) {
+      toast.error('Please select a client')
       return
     }
 
+    console.log('🏥 Providers query status:', {
+      isLoading: providersQuery.isLoading,
+      isError: providersQuery.isError,
+      error: providersQuery.error,
+      data: providersQuery.data
+    })
+
+    console.log('👥 Clients query status:', {
+      isLoading: clientsQuery.isLoading,
+      isError: clientsQuery.isError,
+      error: clientsQuery.error,
+      data: clientsQuery.data,
+      selectedClient: selectedClient
+    })
+
     const providers = providersQuery.data || []
     if (providers.length === 0) {
-      toast.error('No providers available')
-      return
+      if (providersQuery.isLoading) {
+        toast.error('Loading providers... Please wait.')
+        return
+      } else if (providersQuery.isError) {
+        toast.error('Failed to load providers. Please refresh and try again.')
+        return
+      } else {
+        toast.error('No providers available. Please create a provider first.')
+        return
+      }
     }
 
     const appointmentData = {
       provider_id: providers[0].id,
-      client_name: clientName.trim(),
-      client_email: `${clientName.toLowerCase().replace(/\s+/g, '.')}@example.com`,
-      client_phone: clientPhone || 'Not provided',
+      client_name: selectedClient.name,
+      client_email: selectedClient.email || `${selectedClient.name.toLowerCase().replace(/\s+/g, '.')}@example.com`,
+      client_phone: selectedClient.phone || 'Not provided',
       service_name: selectedService.name,
       service_description: selectedService.name,
-      scheduled_time: new Date(appointmentTime).toISOString(),
+      scheduled_at: new Date(appointmentTime).toISOString(),
       duration: selectedService.duration,
       status: 'scheduled',
       notes: '',
       special_requests: ''
     }
+
+    console.log('🚀 Creating appointment with data:', appointmentData)
+    console.log('🚀 Selected provider:', providers[0])
+    console.log('🚀 Appointment time:', appointmentTime, '→', new Date(appointmentTime).toISOString())
 
     createAppointmentMutation.mutate(appointmentData)
   }
@@ -115,7 +155,7 @@ const QuickAddButton: React.FC = () => {
       {/* Quick Add Button */}
       <Button
         onClick={() => setShowForm(true)}
-        className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white shadow-lg"
+        className="shadow-lg hover:shadow-xl transition-all duration-300 bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary"
         size="lg"
       >
         <Plus className="h-5 w-5 mr-2" />
@@ -138,11 +178,11 @@ const QuickAddButton: React.FC = () => {
               exit={{ scale: 0.9, opacity: 0 }}
               transition={{ type: "spring", duration: 0.3 }}
             >
-              <Card className="w-full max-w-md">
+              <Card className="w-full max-w-md card-hover bg-gradient-to-br from-card to-card/50 border-2">
                 <CardHeader className="pb-3">
                   <div className="flex items-center justify-between">
                     <CardTitle className="flex items-center space-x-2">
-                      <Zap className="h-5 w-5 text-blue-600" />
+                      <Zap className="h-5 w-5 text-primary" />
                       <span>Quick Appointment</span>
                     </CardTitle>
                     <Button variant="ghost" size="sm" onClick={() => setShowForm(false)}>
@@ -153,26 +193,61 @@ const QuickAddButton: React.FC = () => {
 
                 <CardContent>
                   <form onSubmit={handleSubmit} className="space-y-4">
-                    {/* Client Name */}
+                    {/* Client Selection */}
                     <div>
-                      <Input
-                        value={clientName}
-                        onChange={(e) => setClientName(e.target.value)}
-                        placeholder="Client name"
-                        className="text-lg h-12"
-                        autoFocus
+                      <label className="text-sm font-medium text-muted-foreground mb-2 block">
+                        Select Client *
+                      </label>
+                      <select
+                        value={selectedClient?.id || ''}
+                        onChange={(e) => {
+                          const value = e.target.value
+                          if (value === 'new') {
+                            // Redirect to clients page or show create client form
+                            toast.info('Please go to Clients page to add a new client first')
+                            return
+                          }
+                          const clientId = parseInt(value)
+                          const client = clientsQuery.data?.find((c: any) => c.id === clientId)
+                          setSelectedClient(client || null)
+                        }}
+                        className="w-full px-4 py-3 text-lg border-2 border-muted focus:border-primary/50 rounded-xl bg-background text-foreground transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-primary/20"
                         required
-                      />
-                    </div>
-
-                    {/* Phone (optional) */}
-                    <div>
-                      <Input
-                        value={clientPhone}
-                        onChange={(e) => setClientPhone(e.target.value)}
-                        placeholder="Phone (optional)"
-                        type="tel"
-                      />
+                      >
+                        <option value="">Choose a client...</option>
+                        {clientsQuery.data?.map((client: any) => (
+                          <option key={client.id} value={client.id}>
+                            {client.name} {client.phone ? `(${client.phone})` : ''}
+                          </option>
+                        ))}
+                        <option value="new" className="font-medium text-primary">
+                          ➕ Add New Client
+                        </option>
+                      </select>
+                      
+                      {clientsQuery.isLoading && (
+                        <p className="text-xs text-muted-foreground mt-1">Loading clients...</p>
+                      )}
+                      
+                      {clientsQuery.isError && (
+                        <p className="text-xs text-destructive mt-1">Failed to load clients</p>
+                      )}
+                      
+                      {!clientsQuery.isLoading && !clientsQuery.isError && (!clientsQuery.data || clientsQuery.data.length === 0) && (
+                        <p className="text-xs text-muted-foreground mt-1">No clients found. Create some clients first.</p>
+                      )}
+                      
+                      {selectedClient && (
+                        <div className="mt-2 p-3 bg-primary/5 rounded-lg border border-primary/20">
+                          <p className="text-sm font-medium">{selectedClient.name}</p>
+                          {selectedClient.email && (
+                            <p className="text-xs text-muted-foreground">{selectedClient.email}</p>
+                          )}
+                          {selectedClient.phone && (
+                            <p className="text-xs text-muted-foreground">{selectedClient.phone}</p>
+                          )}
+                        </div>
+                      )}
                     </div>
 
                     {/* Quick Service Selection */}
@@ -218,8 +293,8 @@ const QuickAddButton: React.FC = () => {
                       </Button>
                       <Button
                         type="submit"
-                        disabled={createAppointmentMutation.isPending || !clientName.trim()}
-                        className="flex-1 bg-blue-600 hover:bg-blue-700"
+                        disabled={createAppointmentMutation.isPending || !selectedClient}
+                        className="flex-1 bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary shadow-lg hover:shadow-xl transition-all duration-300"
                       >
                         {createAppointmentMutation.isPending ? (
                           <motion.div

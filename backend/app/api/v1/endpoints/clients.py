@@ -16,8 +16,16 @@ from app.schemas.client import (
     ClientResponse,
     ClientListResponse,
     ClientStats,
-    ClientSummary
+    ClientSummary,
+    ClientInvitation,
+    ClientInvitationResponse,
+    ClientRegistration,
+    ClientRegistrationResponse,
+    ClientLoginRequest,
+    ClientLoginResponse
 )
+from app.services.client_invitation import client_invitation_service
+# client_auth_service imported lazily to avoid JWT module loading issues
 
 router = APIRouter()
 
@@ -176,6 +184,20 @@ def create_client(
         
         print(f"✅ Client created: {client.name} (ID: {client.id})")
         
+        # Automatically send invitation if client has email
+        if client.email:
+            try:
+                success, message = client_invitation_service.send_client_invitation(
+                    client_id=client.id,
+                    db=db
+                )
+                if success:
+                    print(f"📧 Invitation sent to {client.email}")
+                else:
+                    print(f"⚠️ Failed to send invitation to {client.email}: {message}")
+            except Exception as e:
+                print(f"⚠️ Error sending invitation to {client.email}: {str(e)}")
+        
         return ClientResponse.model_validate(client)
         
     except HTTPException:
@@ -332,3 +354,321 @@ def get_client_stats(
     except Exception as e:
         print(f"❌ Error fetching client stats: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Failed to fetch client stats: {str(e)}")
+
+
+# Client Invitation Endpoints
+
+@router.post("/{client_id}/invite", response_model=ClientInvitationResponse)
+def send_client_invitation(
+    client_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Send invitation email to a client to create their PWA account
+    """
+    try:
+        # Verify client belongs to current user's organization
+        client = db.query(Client).filter(
+            and_(
+                Client.id == client_id,
+                Client.organization_id == current_user.organization_id
+            )
+        ).first()
+        
+        if not client:
+            raise HTTPException(status_code=404, detail="Client not found")
+        
+        # Send invitation
+        success, message = client_invitation_service.send_client_invitation(
+            client_id=client_id,
+            db=db
+        )
+        
+        if success:
+            # Refresh client to get updated invitation fields
+            db.refresh(client)
+            return ClientInvitationResponse(
+                success=True,
+                message=message,
+                invitation_sent_at=client.invitation_sent_at,
+                invitation_expires_at=client.invitation_expires_at
+            )
+        else:
+            return ClientInvitationResponse(
+                success=False,
+                message=message
+            )
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"❌ Error sending invitation to client {client_id}: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to send invitation: {str(e)}")
+
+
+@router.post("/{client_id}/resend-invite", response_model=ClientInvitationResponse)
+def resend_client_invitation(
+    client_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Resend invitation email to a client
+    """
+    try:
+        # Verify client belongs to current user's organization
+        client = db.query(Client).filter(
+            and_(
+                Client.id == client_id,
+                Client.organization_id == current_user.organization_id
+            )
+        ).first()
+        
+        if not client:
+            raise HTTPException(status_code=404, detail="Client not found")
+        
+        # Resend invitation
+        success, message = client_invitation_service.resend_invitation(
+            client_id=client_id,
+            db=db
+        )
+        
+        if success:
+            # Refresh client to get updated invitation fields
+            db.refresh(client)
+            return ClientInvitationResponse(
+                success=True,
+                message=message,
+                invitation_sent_at=client.invitation_sent_at,
+                invitation_expires_at=client.invitation_expires_at
+            )
+        else:
+            return ClientInvitationResponse(
+                success=False,
+                message=message
+            )
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"❌ Error resending invitation to client {client_id}: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to resend invitation: {str(e)}")
+
+
+# Client Registration and Authentication Endpoints (for PWA)
+
+@router.post("/register", response_model=ClientRegistrationResponse)
+def register_client(
+    registration_data: ClientRegistration,
+    db: Session = Depends(get_db)
+):
+    """
+    Register a new client account using invitation token (for PWA)
+    """
+    try:
+        # Validate passwords match
+        if registration_data.password != registration_data.confirm_password:
+            raise HTTPException(status_code=400, detail="Passwords do not match")
+        
+        # Complete registration
+        success, message, client_data = client_invitation_service.complete_client_registration(
+            token=registration_data.invitation_token,
+            password=registration_data.password,
+            db=db
+        )
+        
+        if success:
+            return ClientRegistrationResponse(
+                success=True,
+                message=message,
+                client_id=client_data["client_id"],
+                access_token=client_data["access_token"]
+            )
+        else:
+            return ClientRegistrationResponse(
+                success=False,
+                message=message,
+                client_id=0
+            )
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"❌ Error registering client: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to register client: {str(e)}")
+
+
+@router.post("/login", response_model=ClientLoginResponse)
+def login_client(
+    login_data: ClientLoginRequest,
+    db: Session = Depends(get_db)
+):
+    """
+    Login client for PWA access
+    """
+    try:
+        from app.services.client_auth import client_auth_service  # Lazy import
+        
+        # Authenticate client
+        client = client_auth_service.authenticate_client(
+            email=login_data.email,
+            password=login_data.password,
+            db=db
+        )
+        
+        if not client:
+            raise HTTPException(status_code=401, detail="Invalid email or password")
+        
+        # Create access token
+        access_token = client_auth_service.create_access_token(
+            client_id=client.id,
+            email=client.email
+        )
+        
+        # Get providers this client has appointments with
+        # (We'll implement this logic to get the list of providers)
+        providers = []  # TODO: Implement provider list logic
+        
+        return ClientLoginResponse(
+            success=True,
+            message="Login successful",
+            access_token=access_token,
+            client=ClientResponse.model_validate(client),
+            providers=providers
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"❌ Error logging in client: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to login: {str(e)}")
+
+
+@router.get("/validate-token/{token}")
+def validate_invitation_token(
+    token: str,
+    db: Session = Depends(get_db)
+):
+    """
+    Validate an invitation token (for PWA registration page)
+    """
+    try:
+        client = client_invitation_service.validate_invitation_token(token, db)
+        
+        if client:
+            return {
+                "valid": True,
+                "client_name": client.name,
+                "client_email": client.email
+            }
+        else:
+            return {
+                "valid": False,
+                "message": "Invalid or expired invitation token"
+            }
+            
+    except Exception as e:
+        print(f"❌ Error validating token: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to validate token: {str(e)}")
+
+@router.get("/me")
+def get_current_client_data(db: Session = Depends(get_db)):
+    """Get current client data (placeholder for client PWA)"""
+    # TODO: Implement proper client authentication
+    # For now, return mock data
+    return {
+        "client": {
+            "id": 1,
+            "name": "Demo Client",
+            "email": "demo@example.com",
+            "phone": "+1234567890",
+            "has_account": True,
+            "account_created_at": "2024-01-01T00:00:00Z"
+        },
+        "providers": [
+            {
+                "id": 1,
+                "business_name": "Demo Provider",
+                "address": "123 Main St, City, State",
+                "phone": "+1987654321",
+                "contact_email": "provider@example.com"
+            }
+        ]
+    }
+
+@router.post("/test-email")
+def test_email_service(
+    test_email: str,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Test email service configuration"""
+    try:
+        from app.services.email_service import email_service
+        
+        # Send test email
+        success = email_service.send_email(
+            to_email=test_email,
+            subject="WaitLessQ Email Service Test",
+            html_content=f"""
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <meta charset="utf-8">
+                <title>Email Test</title>
+                <style>
+                    body {{ font-family: Arial, sans-serif; line-height: 1.6; color: #333; }}
+                    .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
+                    .header {{ text-align: center; background: #6366f1; color: white; padding: 20px; border-radius: 8px; }}
+                    .content {{ padding: 20px; background: #f9fafb; border-radius: 8px; margin: 20px 0; }}
+                    .success {{ color: #10b981; font-weight: bold; }}
+                </style>
+            </head>
+            <body>
+                <div class="container">
+                    <div class="header">
+                        <h1>WaitLessQ Email Test</h1>
+                        <p>Email Service Configuration Test</p>
+                    </div>
+                    <div class="content">
+                        <p class="success">✅ Email service is working correctly!</p>
+                        <p>This test email was sent from your WaitLessQ dashboard.</p>
+                        <p><strong>Sent by:</strong> {current_user.email}</p>
+                        <p><strong>Organization:</strong> {current_user.organization.name if current_user.organization else 'N/A'}</p>
+                        <p>If you received this email, your email configuration is working properly.</p>
+                    </div>
+                </div>
+            </body>
+            </html>
+            """,
+            text_content=f"""
+            WaitLessQ Email Service Test
+            
+            ✅ Email service is working correctly!
+            
+            This test email was sent from your WaitLessQ dashboard.
+            
+            Sent by: {current_user.email}
+            Organization: {current_user.organization.name if current_user.organization else 'N/A'}
+            
+            If you received this email, your email configuration is working properly.
+            """
+        )
+        
+        if success:
+            return {
+                "success": True,
+                "message": "Test email sent successfully",
+                "recipient": test_email
+            }
+        else:
+            return {
+                "success": False,
+                "message": "Failed to send test email",
+                "recipient": test_email
+            }
+            
+    except Exception as e:
+        print(f"❌ Email test error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Email test failed: {str(e)}")

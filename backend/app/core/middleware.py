@@ -21,6 +21,11 @@ class RateLimitMiddleware:
         
         request = Request(scope, receive)
         
+        # Skip rate limiting for auth endpoints to prevent login issues
+        if request.url.path.startswith("/api/v1/auth/"):
+            await self.app(scope, receive, send)
+            return
+        
         # Get client identifier (IP or user ID)
         client_id = self._get_client_id(request)
         

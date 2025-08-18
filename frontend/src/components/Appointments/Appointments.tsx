@@ -419,13 +419,13 @@ export function Appointments() {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'confirmed': return 'bg-green-500'
-      case 'scheduled': return 'bg-blue-500'
-      case 'in_progress': return 'bg-yellow-500'
-      case 'completed': return 'bg-gray-500'
-      case 'cancelled': return 'bg-red-500'
-      case 'no_show': return 'bg-orange-500'
-      default: return 'bg-gray-400'
+      case 'confirmed': return 'bg-success text-success-foreground'
+      case 'scheduled': return 'bg-info text-info-foreground'
+      case 'in_progress': return 'bg-warning text-warning-foreground'
+      case 'completed': return 'bg-muted text-muted-foreground'
+      case 'cancelled': return 'bg-destructive text-destructive-foreground'
+      case 'no_show': return 'bg-warning/80 text-warning-foreground'
+      default: return 'bg-secondary text-secondary-foreground'
     }
   }
 
@@ -437,49 +437,56 @@ export function Appointments() {
   })
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8 animate-fade-in">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Appointments</h1>
-          <p className="text-muted-foreground">
-            Manage client appointments and scheduling.
+        <div className="space-y-2">
+          <h1 className="text-4xl font-bold tracking-tight bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">
+            Appointments
+          </h1>
+          <p className="text-lg text-muted-foreground">
+            Manage client appointments and scheduling with ease
           </p>
         </div>
         <Button
           onClick={() => setShowForm(true)}
-          className="bg-blue-600 hover:bg-blue-700"
+          className="shadow-lg hover:shadow-xl transition-all duration-300 bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary"
+          size="lg"
         >
-          <UserPlus className="h-4 w-4 mr-2" />
-          Add Appointment
+          <UserPlus className="h-5 w-5 mr-2" />
+          New Appointment
         </Button>
       </div>
 
       {/* Search and Filter */}
-      <div className="flex gap-4">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Search appointments..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10"
-          />
+      <Card className="p-6 bg-gradient-to-r from-background to-muted/30 border-2 border-muted/50">
+        <div className="flex gap-6 items-center">
+          <div className="relative flex-1">
+            <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+            <Input
+              placeholder="Search appointments by client name, service, or email..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-12 pr-4 py-3 text-base border-2 border-muted focus:border-primary/50 rounded-xl input-focus transition-all duration-300"
+            />
+          </div>
+          <div className="min-w-[160px]">
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="w-full px-4 py-3 border-2 border-muted focus:border-primary/50 rounded-xl bg-background text-foreground transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-primary/20"
+            >
+              <option value="all">All Status</option>
+              <option value="scheduled">Scheduled</option>
+              <option value="confirmed">Confirmed</option>
+              <option value="in_progress">In Progress</option>
+              <option value="completed">Completed</option>
+              <option value="cancelled">Cancelled</option>
+              <option value="no_show">No Show</option>
+            </select>
+          </div>
         </div>
-        <select
-          value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value)}
-          className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-        >
-          <option value="all">All Status</option>
-          <option value="scheduled">Scheduled</option>
-          <option value="confirmed">Confirmed</option>
-          <option value="in_progress">In Progress</option>
-          <option value="completed">Completed</option>
-          <option value="cancelled">Cancelled</option>
-          <option value="no_show">No Show</option>
-        </select>
-      </div>
+      </Card>
 
       {/* Add/Edit Appointment Form */}
       {showForm && (
@@ -711,38 +718,56 @@ export function Appointments() {
 
       {/* Error State */}
       {error && (
-        <Card>
-          <CardContent className="py-8 text-center">
-            <p className="text-red-600">
-              Failed to load appointments. Please try again.
-            </p>
+        <Card className="border-2 border-destructive/20 bg-gradient-to-br from-destructive/5 to-transparent">
+          <CardContent className="py-12 text-center">
+            <div className="animate-scale-in">
+              <div className="p-4 rounded-full bg-destructive/10 text-destructive w-fit mx-auto mb-4">
+                <X className="h-10 w-10" />
+              </div>
+              <h3 className="text-xl font-semibold mb-2 text-destructive">Failed to load appointments</h3>
+              <p className="text-muted-foreground mb-6">
+                There was an error loading your appointments. Please try refreshing the page.
+              </p>
+              <Button
+                onClick={() => window.location.reload()}
+                variant="outline"
+                className="border-destructive/20 text-destructive hover:bg-destructive/10"
+              >
+                Try Again
+              </Button>
+            </div>
           </CardContent>
         </Card>
       )}
 
       {/* Empty State */}
       {!isLoading && !error && (!appointments || appointments.length === 0) && (
-        <Card>
-          <CardContent className="py-12 text-center">
-            <Calendar className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-            <h3 className="text-lg font-medium mb-2">No appointments yet</h3>
-            <p className="text-muted-foreground mb-4">
-              Start by scheduling your first appointment.
-            </p>
-            <Button
-              onClick={() => setShowForm(true)}
-              className="bg-blue-600 hover:bg-blue-700"
-            >
-              <UserPlus className="h-4 w-4 mr-2" />
-              Schedule First Appointment
-            </Button>
+        <Card className="border-2 border-dashed border-muted-foreground/25 bg-gradient-to-br from-muted/20 to-transparent">
+          <CardContent className="py-16 text-center">
+            <div className="animate-scale-in">
+              <div className="p-4 rounded-full bg-primary/10 text-primary w-fit mx-auto mb-6">
+                <Calendar className="h-12 w-12" />
+              </div>
+              <h3 className="text-2xl font-semibold mb-3 text-foreground">No appointments yet</h3>
+              <p className="text-muted-foreground mb-8 text-lg max-w-md mx-auto">
+                Start building your schedule by creating your first appointment.
+              </p>
+              <Button
+                onClick={() => setShowForm(true)}
+                size="lg"
+                className="shadow-lg hover:shadow-xl transition-all duration-300 bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary"
+              >
+                <UserPlus className="h-5 w-5 mr-2" />
+                Schedule First Appointment
+              </Button>
+            </div>
           </CardContent>
         </Card>
       )}
 
       {/* Appointments List */}
       {filteredAppointments && filteredAppointments.length > 0 && (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           {filteredAppointments.map((appointment: Appointment, index: number) => (
             <motion.div
               key={appointment.id}
@@ -750,57 +775,58 @@ export function Appointments() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.3, delay: index * 0.1 }}
             >
-              <Card className="h-full">
-                <CardHeader>
+              <Card className="h-full card-hover group relative overflow-hidden bg-gradient-to-br from-card to-card/50 border-2">
+                <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                <CardHeader className="relative z-10">
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
                       <CardTitle className="text-lg flex items-center gap-2">
                         <User className="h-4 w-4" />
                         {appointment.client_name}
                       </CardTitle>
-                      <div className="flex items-center gap-2 mt-1">
+                      <div className="flex items-center gap-2 mt-3">
                         <div
                           className={cn(
-                            "h-2 w-2 rounded-full",
+                            "px-3 py-1.5 rounded-full text-xs font-semibold uppercase tracking-wider shadow-sm",
                             getStatusColor(appointment.status)
                           )}
-                        />
-                        <span className="text-sm text-muted-foreground capitalize">
+                        >
                           {appointment.status.replace('_', ' ')}
-                        </span>
+                        </div>
                       </div>
                     </div>
-                    <div className="flex gap-1">
+                    <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
                       {appointment.status === 'scheduled' && (
                         <Button
                           variant="ghost"
-                          size="icon"
+                          size="sm"
                           onClick={() => confirmAppointmentMutation.mutate(appointment.id)}
-                          className="text-green-600 hover:text-green-700"
+                          className="h-8 w-8 p-0 hover:bg-success/10 hover:text-success"
                         >
                           <Check className="h-4 w-4" />
                         </Button>
                       )}
                       <Button
                         variant="ghost"
-                        size="icon"
+                        size="sm"
                         onClick={() => handleEdit(appointment)}
+                        className="h-8 w-8 p-0 hover:bg-primary/10 hover:text-primary"
                       >
                         <Edit className="h-4 w-4" />
                       </Button>
                       <Button
                         variant="ghost"
-                        size="icon"
+                        size="sm"
                         onClick={() => cancelAppointmentMutation.mutate(appointment.id)}
-                        className="text-orange-600 hover:text-orange-700"
+                        className="h-8 w-8 p-0 hover:bg-warning/10 hover:text-warning"
                       >
                         <X className="h-4 w-4" />
                       </Button>
                       <Button
                         variant="ghost"
-                        size="icon"
+                        size="sm"
                         onClick={() => handleDelete(appointment.id)}
-                        className="text-red-600 hover:text-red-700"
+                        className="h-8 w-8 p-0 hover:bg-destructive/10 hover:text-destructive"
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>

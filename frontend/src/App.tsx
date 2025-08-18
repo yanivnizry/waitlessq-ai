@@ -6,6 +6,8 @@ import { Toaster } from "sonner"
 import { ThemeProvider } from "next-themes"
 
 import { useAuthStore } from "./store/auth-store"
+import { useSessionManagement } from "./hooks/useSessionManagement"
+import { AuthProvider } from "./contexts/AuthContext"
 import { LoginForm } from "./components/Auth/LoginForm"
 import { RegisterForm } from "./components/Auth/RegisterForm"
 import { ProtectedRoute } from "./components/Auth/ProtectedRoute"
@@ -18,6 +20,7 @@ import { Availability } from "./components/Availability/Availability"
 import Calendar from "./components/Calendar/Calendar"
 import Services from "./components/Services/Services"
 import Gamification from "./components/Gamification/Gamification"
+import { Settings } from "./components/Settings/Settings"
 import { Layout } from "./components/Layout/Layout"
 
 // Create a client with more conservative retry settings
@@ -40,19 +43,15 @@ const queryClient = new QueryClient({
   },
 })
 
-function App() {
+// Inner component that uses session management hook (needs to be inside Router)
+function AppRoutes() {
   const { isAuthenticated } = useAuthStore()
+  
+  // Set up session management with navigation
+  useSessionManagement()
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-        <Router
-          future={{
-            v7_startTransition: true,
-            v7_relativeSplatPath: true,
-          }}
-        >
-          <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background">
             <Routes>
               {/* Public routes */}
               <Route
@@ -189,6 +188,18 @@ function App() {
                 }
               />
 
+              {/* Settings route */}
+              <Route
+                path="/settings"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <Settings />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+
               {/* Redirect root to dashboard or login */}
               <Route
                 path="/"
@@ -209,7 +220,23 @@ function App() {
                 }
               />
             </Routes>
-          </div>
+    </div>
+  )
+}
+
+function App() {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+        <Router
+          future={{
+            v7_startTransition: true,
+            v7_relativeSplatPath: true,
+          }}
+        >
+          <AuthProvider>
+            <AppRoutes />
+          </AuthProvider>
         </Router>
         
         {/* Toast notifications */}

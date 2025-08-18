@@ -60,6 +60,15 @@ async def create_appointment(
         db.add(db_appointment)
         db.commit()
         db.refresh(db_appointment)
+        
+        # Automatically assign appointment to daily service queue
+        from app.services.queue_manager import QueueManager
+        queue_manager = QueueManager(db)
+        assigned_queue = queue_manager.assign_appointment_to_queue(db_appointment)
+        
+        if assigned_queue:
+            print(f"✅ Appointment {db_appointment.id} assigned to queue: {assigned_queue.name}")
+        
         return db_appointment
     except Exception as e:
         db.rollback()
@@ -93,4 +102,14 @@ async def delete_appointment(appointment_id: int, db: Session = Depends(get_db))
     
     db.delete(appointment)
     db.commit()
-    return {"message": "Appointment deleted successfully"} 
+    return {"message": "Appointment deleted successfully"}
+
+# Client PWA endpoints
+@router.get("/client", response_model=List[AppointmentResponse])
+async def get_client_appointments(db: Session = Depends(get_db)):
+    """Get appointments for a client (used by client PWA)"""
+    # This endpoint would normally use client authentication
+    # For now, we'll return all appointments as a placeholder
+    # TODO: Implement client authentication and filter by client
+    appointments = db.query(Appointment).all()
+    return appointments 

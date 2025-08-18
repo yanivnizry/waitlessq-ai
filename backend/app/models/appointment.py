@@ -18,6 +18,7 @@ class Appointment(Base):
     id = Column(Integer, primary_key=True, index=True)
     provider_id = Column(Integer, ForeignKey("providers.id"), nullable=False)
     client_id = Column(Integer, ForeignKey("clients.id"), nullable=True)  # Optional for backward compatibility
+    queue_id = Column(Integer, ForeignKey("queues.id"), nullable=True)  # Link to daily service queue
     
     # Legacy client fields (kept for backward compatibility)
     client_name = Column(String(255), nullable=False)
@@ -51,6 +52,7 @@ class Appointment(Base):
     # Relationships
     provider = relationship("Provider", back_populates="appointments")
     client = relationship("Client", back_populates="appointments")
+    queue = relationship("Queue", back_populates="appointments")
     location_tracking = relationship("LocationTracking", back_populates="appointment")
     
     def __repr__(self):

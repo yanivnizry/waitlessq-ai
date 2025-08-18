@@ -32,14 +32,19 @@ class Settings(BaseSettings):
     MAX_FILE_SIZE: int = 10 * 1024 * 1024  # 10MB
     UPLOAD_DIR: str = "uploads"
     
-    # PWA Settings
-    PWA_BASE_URL: str = "http://localhost:5001"
+    # Email Configuration
+    SMTP_SERVER: str = os.getenv("SMTP_SERVER", "smtp.gmail.com")
+    SMTP_PORT: int = int(os.getenv("SMTP_PORT", "587"))
+    SMTP_USERNAME: str = os.getenv("SMTP_USERNAME", "")
+    SMTP_PASSWORD: str = os.getenv("SMTP_PASSWORD", "")
+    FROM_EMAIL: str = os.getenv("FROM_EMAIL", "")
+    FROM_NAME: str = os.getenv("FROM_NAME", "WaitLessQ")
     
-    # Email (for future use)
-    SMTP_HOST: str = ""
-    SMTP_PORT: int = 587
-    SMTP_USER: str = ""
-    SMTP_PASSWORD: str = ""
+    # Client System Configuration
+    CLIENT_JWT_SECRET_KEY: str = os.getenv("CLIENT_JWT_SECRET_KEY", secrets.token_urlsafe(32))
+    CLIENT_ACCESS_TOKEN_EXPIRE_MINUTES: int = int(os.getenv("CLIENT_ACCESS_TOKEN_EXPIRE_MINUTES", "10080"))  # 7 days
+    CLIENT_INVITATION_EXPIRE_DAYS: int = int(os.getenv("CLIENT_INVITATION_EXPIRE_DAYS", "7"))
+    PWA_BASE_URL: str = os.getenv("PWA_BASE_URL", "https://app.waitlessq.com")
     
     # Scaling and Performance
     # Rate Limiting

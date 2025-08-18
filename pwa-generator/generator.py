@@ -21,7 +21,7 @@ class PWAGenerator:
         """Get the path for a provider's PWA"""
         return self.storage_path / provider_subdomain
     
-    async def generate_pwa(self, provider_data: Dict[str, Any], pwa_config: Optional[Dict[str, Any]] = None) -> str:
+    async def generate_pwa(self, provider_data: Dict[str, Any], pwa_config: Optional[Dict[str, Any]] = None, pwa_type: str = "basic") -> str:
         """Generate PWA for a provider"""
         provider_subdomain = provider_data.get("pwa_subdomain")
         if not provider_subdomain:
@@ -32,12 +32,13 @@ class PWAGenerator:
         # Create PWA directory
         pwa_path.mkdir(exist_ok=True)
         
-        # Generate PWA files
+        # Generate PWA files based on type
         await self._generate_manifest(pwa_path, provider_data, pwa_config)
-        await self._generate_index_html(pwa_path, provider_data, pwa_config)
-        await self._generate_service_worker(pwa_path, provider_data)
-        await self._generate_styles(pwa_path, provider_data, pwa_config)
-        await self._generate_scripts(pwa_path, provider_data, pwa_config)
+        
+        if pwa_type == "client":
+            await self._generate_client_pwa(pwa_path, provider_data, pwa_config)
+        else:
+            await self._generate_basic_pwa(pwa_path, provider_data, pwa_config)
         
         return f"/pwa/{provider_subdomain}"
     
@@ -47,21 +48,22 @@ class PWAGenerator:
             "name": pwa_config.get("app_name", provider_data.get("business_name", "WaitLessQ")) if pwa_config else provider_data.get("business_name", "WaitLessQ"),
             "short_name": provider_data.get("business_name", "WaitLessQ")[:12],
             "description": pwa_config.get("app_description", provider_data.get("business_description", "")) if pwa_config else provider_data.get("business_description", ""),
-            "start_url": "/",
+            "start_url": f"/pwa/{provider_data.get('pwa_subdomain')}/",
+            "scope": f"/pwa/{provider_data.get('pwa_subdomain')}/",
             "display": pwa_config.get("display_mode", "standalone") if pwa_config else "standalone",
             "orientation": pwa_config.get("orientation", "portrait") if pwa_config else "portrait",
             "theme_color": pwa_config.get("theme_color", provider_data.get("primary_color", "#3B82F6")) if pwa_config else provider_data.get("primary_color", "#3B82F6"),
             "background_color": pwa_config.get("background_color", "#FFFFFF") if pwa_config else "#FFFFFF",
             "icons": [
                 {
-                    "src": pwa_config.get("icon_192", "/static/icons/icon-192.png") if pwa_config else "/static/icons/icon-192.png",
+                    "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><rect width='192' height='192' fill='%23" + (pwa_config.get("theme_color", provider_data.get("primary_color", "#3B82F6")) if pwa_config else provider_data.get("primary_color", "#3B82F6")).lstrip('#') + "' rx='24'/><text x='96' y='120' font-size='80' text-anchor='middle' fill='white'>📱</text></svg>",
                     "sizes": "192x192",
-                    "type": "image/png"
+                    "type": "image/svg+xml"
                 },
                 {
-                    "src": pwa_config.get("icon_512", "/static/icons/icon-512.png") if pwa_config else "/static/icons/icon-512.png",
+                    "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'><rect width='512' height='512' fill='%23" + (pwa_config.get("theme_color", provider_data.get("primary_color", "#3B82F6")) if pwa_config else provider_data.get("primary_color", "#3B82F6")).lstrip('#') + "' rx='64'/><text x='256' y='320' font-size='200' text-anchor='middle' fill='white'>📱</text></svg>",
                     "sizes": "512x512",
-                    "type": "image/png"
+                    "type": "image/svg+xml"
                 }
             ]
         }
@@ -90,13 +92,19 @@ class PWAGenerator:
         with open(pwa_path / "index.html", "w") as f:
             f.write(html_content)
     
-    async def _generate_service_worker(self, pwa_path: Path, provider_data: Dict[str, Any]):
+    async def _generate_service_worker(self, pwa_path: Path, provider_data: Dict[str, Any], pwa_config: Optional[Dict[str, Any]] = None):
         """Generate service worker for offline functionality"""
         template = self.jinja_env.get_template("sw.js")
         
+        # Generate cache version based on current timestamp
+        import time
+        cache_version = str(int(time.time()))
+        
         context = {
             "provider_id": provider_data.get("id"),
-            "cache_name": f"waitlessq-{provider_data.get('id')}-v1"
+            "cache_name": f"waitlessq-{provider_data.get('id')}",
+            "cache_version": cache_version,
+            "app_name": pwa_config.get("app_name", provider_data.get("business_name", "WaitLessQ")) if pwa_config else provider_data.get("business_name", "WaitLessQ")
         }
         
         sw_content = template.render(**context)
@@ -104,12 +112,109 @@ class PWAGenerator:
         with open(pwa_path / "sw.js", "w") as f:
             f.write(sw_content)
     
+    async def _generate_service_worker_with_version(self, pwa_path: Path, provider_data: Dict[str, Any], pwa_config: Optional[Dict[str, Any]] = None, cache_version: str = None):
+        """Generate service worker with specific cache version"""
+        template = self.jinja_env.get_template("sw.js")
+        
+        if cache_version is None:
+            import time
+            cache_version = str(int(time.time()))
+        
+        context = {
+            "provider_id": provider_data.get("id"),
+            "cache_name": f"waitlessq-{provider_data.get('id')}",
+            "cache_version": cache_version,
+            "app_name": pwa_config.get("app_name", provider_data.get("business_name", "WaitLessQ")) if pwa_config else provider_data.get("business_name", "WaitLessQ")
+        }
+        
+        sw_content = template.render(**context)
+        
+        with open(pwa_path / "sw.js", "w") as f:
+            f.write(sw_content)
+    
+    async def _generate_basic_pwa(self, pwa_path: Path, provider_data: Dict[str, Any], pwa_config: Optional[Dict[str, Any]] = None):
+        """Generate basic PWA (original functionality)"""
+        await self._generate_index_html(pwa_path, provider_data, pwa_config)
+        await self._generate_styles(pwa_path, provider_data, pwa_config)
+        await self._generate_scripts(pwa_path, provider_data, pwa_config)
+        await self._generate_service_worker(pwa_path, provider_data, pwa_config)
+    
+    async def _generate_client_pwa(self, pwa_path: Path, provider_data: Dict[str, Any], pwa_config: Optional[Dict[str, Any]] = None):
+        """Generate client-facing PWA with authentication and appointment management"""
+        # Generate cache version once for all files
+        import time
+        cache_version = str(int(time.time()))
+        
+        await self._generate_client_html(pwa_path, provider_data, pwa_config, cache_version)
+        await self._generate_client_styles(pwa_path, provider_data, pwa_config)
+        await self._generate_client_scripts(pwa_path, provider_data, pwa_config)
+        
+        # Generate service worker with same cache version
+        await self._generate_service_worker_with_version(pwa_path, provider_data, pwa_config, cache_version)
+    
+    async def _generate_client_html(self, pwa_path: Path, provider_data: Dict[str, Any], pwa_config: Optional[Dict[str, Any]] = None, cache_version: str = None):
+        """Generate client PWA HTML"""
+        template = self.jinja_env.get_template("client-pwa.html")
+        
+        # Use provided cache version or generate new one
+        if cache_version is None:
+            import time
+            cache_version = str(int(time.time()))
+        
+        context = {
+            "provider": provider_data,
+            "pwa_config": pwa_config or {},
+            "app_name": pwa_config.get("app_name", provider_data.get("business_name", "WaitLessQ")) if pwa_config else provider_data.get("business_name", "WaitLessQ"),
+            "theme_color": pwa_config.get("theme_color", provider_data.get("primary_color", "#3B82F6")) if pwa_config else provider_data.get("primary_color", "#3B82F6"),
+            "accent_color": pwa_config.get("accent_color", "#F59E0B") if pwa_config else "#F59E0B",
+            "background_color": pwa_config.get("background_color", "#FFFFFF") if pwa_config else "#FFFFFF",
+            "logo_url": pwa_config.get("logo_url") if pwa_config else None,
+            "organization_id": provider_data.get("organization_id", 1),
+            "api_url": os.getenv("BACKEND_URL", "http://localhost:8000"),
+            "cache_version": cache_version,
+            "features": {
+                "notifications": pwa_config.get("features", {}).get("notifications", True) if pwa_config else True,
+                "offline_mode": pwa_config.get("features", {}).get("offline_mode", True) if pwa_config else True,
+                "location_access": pwa_config.get("features", {}).get("location_access", False) if pwa_config else False,
+            }
+        }
+        
+        html_content = template.render(**context)
+        
+        with open(pwa_path / "index.html", "w") as f:
+            f.write(html_content)
+    
+    async def _generate_client_styles(self, pwa_path: Path, provider_data: Dict[str, Any], pwa_config: Optional[Dict[str, Any]] = None):
+        """Generate client PWA CSS"""
+        template = self.jinja_env.get_template("client-styles.css")
+        
+        context = {
+            "theme_color": pwa_config.get("theme_color", provider_data.get("primary_color", "#3B82F6")) if pwa_config else provider_data.get("primary_color", "#3B82F6"),
+            "accent_color": pwa_config.get("accent_color", "#F59E0B") if pwa_config else "#F59E0B",
+            "background_color": pwa_config.get("background_color", "#FFFFFF") if pwa_config else "#FFFFFF",
+        }
+        
+        css_content = template.render(**context)
+        
+        with open(pwa_path / "client-styles.css", "w") as f:
+            f.write(css_content)
+    
+    async def _generate_client_scripts(self, pwa_path: Path, provider_data: Dict[str, Any], pwa_config: Optional[Dict[str, Any]] = None):
+        """Generate client PWA JavaScript"""
+        template = self.jinja_env.get_template("client-app.js")
+        
+        # Client PWA uses static template, no dynamic content needed
+        js_content = template.render()
+        
+        with open(pwa_path / "client-app.js", "w") as f:
+            f.write(js_content)
+    
     async def _generate_styles(self, pwa_path: Path, provider_data: Dict[str, Any], pwa_config: Optional[Dict[str, Any]] = None):
-        """Generate CSS styles"""
+        """Generate CSS styles for basic PWA"""
         template = self.jinja_env.get_template("styles.css")
         
         context = {
-            "primary_color": pwa_config.get("primary_color", provider_data.get("primary_color", "#3B82F6")) if pwa_config else provider_data.get("primary_color", "#3B82F6"),
+            "primary_color": pwa_config.get("theme_color", provider_data.get("primary_color", "#3B82F6")) if pwa_config else provider_data.get("primary_color", "#3B82F6"),
             "secondary_color": pwa_config.get("secondary_color", provider_data.get("secondary_color", "#1F2937")) if pwa_config else provider_data.get("secondary_color", "#1F2937"),
             "accent_color": pwa_config.get("accent_color", "#F59E0B") if pwa_config else "#F59E0B",
             "background_color": pwa_config.get("background_color", "#FFFFFF") if pwa_config else "#FFFFFF",
@@ -122,7 +227,7 @@ class PWAGenerator:
             f.write(css_content)
     
     async def _generate_scripts(self, pwa_path: Path, provider_data: Dict[str, Any], pwa_config: Optional[Dict[str, Any]] = None):
-        """Generate JavaScript files"""
+        """Generate JavaScript files for basic PWA"""
         template = self.jinja_env.get_template("app.js")
         
         context = {

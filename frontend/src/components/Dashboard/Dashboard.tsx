@@ -33,25 +33,31 @@ function StatCard({ title, value, description, icon: Icon, trend, className }: S
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
+      className="h-full"
     >
-      <Card className={cn("", className)}>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">{title}</CardTitle>
-          <Icon className="h-4 w-4 text-muted-foreground" />
+      <Card className={cn("card-hover group relative overflow-hidden bg-gradient-to-br from-card to-card/50 border-2 h-full", className)}>
+        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3 relative z-10">
+          <CardTitle className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">{title}</CardTitle>
+          <div className="p-2 rounded-xl bg-primary/10 text-primary group-hover:bg-primary/20 transition-colors duration-300">
+            <Icon className="h-5 w-5" />
+          </div>
         </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold">{value}</div>
-          <div className="flex items-center space-x-2">
-            <p className="text-xs text-muted-foreground">{description}</p>
+        <CardContent className="relative z-10">
+          <div className="text-3xl font-bold mb-2 bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text text-transparent">{value}</div>
+          <div className="flex items-center justify-between">
+            <p className="text-sm text-muted-foreground">{description}</p>
             {trend && (
               <div className={cn(
-                "flex items-center text-xs",
-                trend.isPositive ? "text-green-600" : "text-red-600"
+                "flex items-center text-sm font-semibold px-2 py-1 rounded-full",
+                trend.isPositive 
+                  ? "text-success bg-success/10" 
+                  : "text-destructive bg-destructive/10"
               )}>
                 {trend.isPositive ? (
-                  <ArrowUpRight className="h-3 w-3" />
+                  <ArrowUpRight className="h-3 w-3 mr-1" />
                 ) : (
-                  <ArrowDownRight className="h-3 w-3" />
+                  <ArrowDownRight className="h-3 w-3 mr-1" />
                 )}
                 {Math.abs(trend.value)}%
               </div>
@@ -134,10 +140,12 @@ export function Dashboard() {
   })
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
-        <p className="text-muted-foreground">
+    <div className="space-y-8 animate-fade-in">
+      <div className="space-y-2">
+        <h1 className="text-4xl font-bold tracking-tight bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">
+          Dashboard
+        </h1>
+        <p className="text-lg text-muted-foreground">
           Welcome back! Here's what's happening with your business today.
         </p>
         {(statsError || activityError || appointmentsError) && (
@@ -158,7 +166,7 @@ export function Dashboard() {
       )}
 
       {/* Stats Grid */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
         <StatCard
           title="Total Providers"
           value={displayStats.total_providers}
@@ -197,14 +205,17 @@ export function Dashboard() {
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.3, delay: 0.1 }}
         >
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Activity className="h-5 w-5" />
+          <Card className="card-hover group relative overflow-hidden bg-gradient-to-br from-card to-card/50 border-2">
+            <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+            <CardHeader className="relative z-10">
+              <CardTitle className="flex items-center gap-3 text-xl">
+                <div className="p-2 rounded-xl bg-primary/10 text-primary">
+                  <Activity className="h-5 w-5" />
+                </div>
                 Recent Activity
-                {activityLoading && <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600 ml-2"></div>}
+                {activityLoading && <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary ml-2"></div>}
               </CardTitle>
-              <CardDescription>
+              <CardDescription className="text-base">
                 Latest updates from your business
               </CardDescription>
             </CardHeader>
@@ -219,10 +230,10 @@ export function Dashboard() {
                     className="flex items-start space-x-3"
                   >
                     <div className={cn(
-                      "h-2 w-2 rounded-full mt-2",
-                      activity.type === "appointment" && "bg-blue-500",
-                      activity.type === "queue" && "bg-green-500",
-                      activity.type === "provider" && "bg-purple-500"
+                      "h-3 w-3 rounded-full mt-1.5 shadow-sm",
+                      activity.type === "appointment" && "bg-info",
+                      activity.type === "queue" && "bg-success",
+                      activity.type === "provider" && "bg-primary"
                     )} />
                     <div className="flex-1 space-y-1">
                       <p className="text-sm font-medium">{activity.message}</p>
@@ -241,14 +252,17 @@ export function Dashboard() {
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.3, delay: 0.2 }}
         >
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Calendar className="h-5 w-5" />
+          <Card className="card-hover group relative overflow-hidden bg-gradient-to-br from-card to-card/50 border-2">
+            <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+            <CardHeader className="relative z-10">
+              <CardTitle className="flex items-center gap-3 text-xl">
+                <div className="p-2 rounded-xl bg-primary/10 text-primary">
+                  <Calendar className="h-5 w-5" />
+                </div>
                 Upcoming Appointments
-                {appointmentsLoading && <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600 ml-2"></div>}
+                {appointmentsLoading && <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary ml-2"></div>}
               </CardTitle>
-              <CardDescription>
+              <CardDescription className="text-base">
                 Next scheduled appointments
               </CardDescription>
             </CardHeader>
@@ -260,7 +274,7 @@ export function Dashboard() {
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.2, delay: index * 0.1 }}
-                    className="flex items-center justify-between p-3 rounded-lg border"
+                    className="flex items-center justify-between p-4 rounded-xl border-2 border-muted/50 bg-gradient-to-r from-background to-muted/20 hover:border-primary/20 hover:bg-primary/5 transition-all duration-200"
                   >
                     <div className="space-y-1">
                       <p className="text-sm font-medium">{appointment.patient}</p>

@@ -229,4 +229,46 @@
 .input-focus:focus {
   transform: translateY(-1px);
   box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+}
+
+/* Toggle switch styles */
+.toggle {
+  position: relative;
+  display: inline-flex;
+  height: 1.5rem;
+  width: 2.75rem;
+  align-items: center;
+  border-radius: 9999px;
+  background-color: hsl(var(--muted));
+  transition: background-color 0.2s;
+  cursor: pointer;
+  appearance: none;
+  border: none;
+  outline: none;
+}
+
+.toggle:focus {
+  outline: 2px solid hsl(var(--primary));
+  outline-offset: 2px;
+}
+
+.toggle:checked {
+  background-color: hsl(var(--primary));
+}
+
+.toggle::before {
+  content: '';
+  position: absolute;
+  left: 0.25rem;
+  top: 0.25rem;
+  height: 1rem;
+  width: 1rem;
+  transform: translateX(0);
+  border-radius: 50%;
+  background-color: white;
+  transition: transform 0.2s;
+}
+
+.toggle:checked::before {
+  transform: translateX(1.25rem);
 } 

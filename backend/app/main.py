@@ -49,6 +49,8 @@ if settings.is_development and not cors_origins:
     cors_origins = [
         "http://localhost:3000",
         "http://127.0.0.1:3000",
+        "http://localhost:8001",  # PWA generator
+        "http://127.0.0.1:8001",  # PWA generator
     ]
 
 # In production, CORS_ORIGINS must be explicitly set

@@ -34,6 +34,15 @@ class Client(Base):
     total_appointments = Column(Integer, default=0)
     last_appointment_date = Column(DateTime(timezone=True), nullable=True)
     
+    # Account and invitation system
+    has_account = Column(Boolean, default=False)  # Whether client has created PWA account
+    hashed_password = Column(String(255), nullable=True)  # Password hash for PWA login
+    invitation_token = Column(String(64), nullable=True, unique=True, index=True)  # Token for account creation
+    invitation_sent_at = Column(DateTime(timezone=True), nullable=True)  # When invitation was sent
+    invitation_expires_at = Column(DateTime(timezone=True), nullable=True)  # When invitation expires
+    account_created_at = Column(DateTime(timezone=True), nullable=True)  # When client created their account
+    last_login_at = Column(DateTime(timezone=True), nullable=True)  # Last PWA login
+    
     # Timestamps
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())

@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { motion } from 'framer-motion'
 import { 
@@ -21,6 +21,8 @@ interface Queue {
   provider_id: number
   name: string
   description?: string
+  service_name?: string
+  queue_date?: string
   status: 'active' | 'paused' | 'closed'
   max_size: number
   estimated_wait_time?: number
@@ -72,6 +74,11 @@ export function Queues() {
   const [selectedQueue, setSelectedQueue] = useState<Queue | null>(null)
   const [searchTerm, setSearchTerm] = useState("")
   const [statusFilter, setStatusFilter] = useState<string>("all")
+  const [selectedDate, setSelectedDate] = useState<string>(() => {
+    // Default to today
+    return new Date().toISOString().split('T')[0]
+  })
+  const [selectedProvider, setSelectedProvider] = useState<number | null>(null)
   const [queueFormData, setQueueFormData] = useState<QueueFormData>({
     provider_id: 0,
     name: "",
@@ -88,10 +95,16 @@ export function Queues() {
 
   const queryClient = useQueryClient()
 
-  // Fetch queues
+  // Fetch queues (daily queues if provider selected, all queues otherwise)
   const { data: queues, isLoading, error } = useQuery({
-    queryKey: ["queues"],
-    queryFn: () => api.queues.getAll(),
+    queryKey: ["queues", selectedProvider, selectedDate],
+    queryFn: () => {
+      if (selectedProvider) {
+        return api.queues.getDailyQueues(selectedProvider, selectedDate)
+      } else {
+        return api.queues.getAll()
+      }
+    },
   })
 
   // Fetch providers for the form
@@ -99,6 +112,18 @@ export function Queues() {
     queryKey: ["providers"],
     queryFn: () => api.providers.getAll(),
   })
+
+  // Auto-select first provider when providers load
+  useEffect(() => {
+    if (providers && providers.length > 0 && !selectedProvider) {
+      setSelectedProvider(providers[0].id)
+    }
+  }, [providers, selectedProvider])
+
+  // Debug selectedQueue changes
+  useEffect(() => {
+    console.log('🔍 selectedQueue changed:', selectedQueue)
+  }, [selectedQueue])
 
   // Fetch queue entries for selected queue
   const { data: queueEntries, isLoading: entriesLoading } = useQuery({
@@ -261,14 +286,7 @@ export function Queues() {
     })
   }
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'active': return 'bg-green-500'
-      case 'paused': return 'bg-yellow-500'
-      case 'closed': return 'bg-red-500'
-      default: return 'bg-gray-400'
-    }
-  }
+
 
   // const getEntryStatusColor = (status: string) => {
   //   switch (status) {
@@ -288,13 +306,15 @@ export function Queues() {
   })
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8 animate-fade-in">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Queues</h1>
-          <p className="text-muted-foreground">
-            Manage waiting queues and customer flow.
+        <div className="space-y-2">
+          <h1 className="text-4xl font-bold tracking-tight bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">
+            Daily Service Queues
+          </h1>
+          <p className="text-lg text-muted-foreground">
+            Manage daily queues organized by service type
           </p>
         </div>
         <Button
@@ -305,6 +325,54 @@ export function Queues() {
           Create Queue
         </Button>
       </div>
+
+      {/* Date and Provider Selector */}
+      <Card className="p-6 bg-gradient-to-r from-background to-muted/30 border-2 border-muted/50">
+        <div className="flex gap-6 items-center">
+          <div className="flex-1">
+            <label className="text-sm font-medium text-muted-foreground mb-2 block">
+              Select Date
+            </label>
+            <Input
+              type="date"
+              value={selectedDate}
+              onChange={(e) => setSelectedDate(e.target.value)}
+              className="text-base border-2 border-muted focus:border-primary/50 rounded-xl input-focus transition-all duration-300"
+            />
+          </div>
+          <div className="flex-1">
+            <label className="text-sm font-medium text-muted-foreground mb-2 block">
+              Select Provider
+            </label>
+            <select
+              value={selectedProvider || ''}
+              onChange={(e) => setSelectedProvider(parseInt(e.target.value) || null)}
+              className="w-full px-4 py-3 text-base border-2 border-muted focus:border-primary/50 rounded-xl bg-background text-foreground transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-primary/20"
+            >
+              <option value="">All Providers</option>
+              {providers?.map((provider: Provider) => (
+                <option key={provider.id} value={provider.id}>
+                  {provider.business_name}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+        
+        {selectedProvider && selectedDate && (
+          <div className="mt-4 p-3 bg-primary/5 rounded-lg border border-primary/20">
+            <p className="text-sm font-medium">
+              📅 Viewing daily queues for {providers?.find(p => p.id === selectedProvider)?.business_name} on{' '}
+              {new Date(selectedDate).toLocaleDateString('en-US', { 
+                weekday: 'long', 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric' 
+              })}
+            </p>
+          </div>
+        )}
+      </Card>
 
       {/* Search and Filter */}
       <div className="flex gap-4">
@@ -495,21 +563,36 @@ export function Queues() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.3, delay: index * 0.1 }}
             >
-              <Card className="h-full">
-                <CardHeader>
+              <Card className="h-full card-hover group relative overflow-hidden bg-gradient-to-br from-card to-card/50 border-2">
+                <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                <CardHeader className="relative z-10">
                   <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <CardTitle className="text-lg">{queue.name}</CardTitle>
-                      <div className="flex items-center gap-2 mt-1">
+                    <div className="flex-1 space-y-3">
+                      <div>
+                        <CardTitle className="text-xl font-semibold">{queue.name}</CardTitle>
+                        {queue.service_name && (
+                          <p className="text-sm text-primary font-medium mt-1">
+                            🏷️ {queue.service_name}
+                          </p>
+                        )}
+                        {queue.queue_date && (
+                          <p className="text-xs text-muted-foreground">
+                            📅 {new Date(queue.queue_date).toLocaleDateString()}
+                          </p>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2">
                         <div
                           className={cn(
-                            "h-2 w-2 rounded-full",
-                            getStatusColor(queue.status)
+                            "px-3 py-1.5 rounded-full text-xs font-semibold uppercase tracking-wider shadow-sm",
+                            queue.status === 'active' ? 'bg-success text-success-foreground' :
+                            queue.status === 'paused' ? 'bg-warning text-warning-foreground' :
+                            queue.status === 'closed' ? 'bg-destructive text-destructive-foreground' :
+                            'bg-secondary text-secondary-foreground'
                           )}
-                        />
-                        <span className="text-sm text-muted-foreground capitalize">
+                        >
                           {queue.status}
-                        </span>
+                        </div>
                       </div>
                     </div>
                     <div className="flex gap-1">
@@ -552,7 +635,10 @@ export function Queues() {
                   <div className="flex gap-2">
                     <Button
                       size="sm"
-                      onClick={() => setSelectedQueue(queue)}
+                      onClick={() => {
+                        console.log('🔍 View Queue clicked for:', queue)
+                        setSelectedQueue(queue)
+                      }}
                       className="flex-1"
                     >
                       <Users className="h-4 w-4 mr-1" />

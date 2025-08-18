@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Boolean, DateTime, Text, ForeignKey, Enum
+from sqlalchemy import Column, Integer, String, Boolean, DateTime, Text, ForeignKey, Enum, Date
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
 import enum
@@ -25,6 +25,8 @@ class Queue(Base):
     # Queue Information
     name = Column(String(255), nullable=False)  # e.g., "General", "Walk-ins", "Emergency"
     description = Column(Text)
+    service_name = Column(String(255))  # Service this queue is for
+    queue_date = Column(Date)  # Date this queue is for
     
     # Status and Settings
     status = Column(Enum(QueueStatus), default=QueueStatus.ACTIVE)
@@ -38,6 +40,7 @@ class Queue(Base):
     # Relationships
     provider = relationship("Provider", back_populates="queues")
     entries = relationship("QueueEntry", back_populates="queue")
+    appointments = relationship("Appointment", back_populates="queue")
     
     def __repr__(self):
         return f"<Queue(id={self.id}, name='{self.name}', provider_id={self.provider_id})>"

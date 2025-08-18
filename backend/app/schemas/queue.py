@@ -1,6 +1,6 @@
 from pydantic import BaseModel
 from typing import Optional
-from datetime import datetime
+from datetime import datetime, date
 from enum import Enum
 
 class QueueStatus(str, Enum):
@@ -19,6 +19,8 @@ class QueueCreate(BaseModel):
     provider_id: int
     name: str
     description: Optional[str] = None
+    service_name: Optional[str] = None
+    queue_date: Optional[date] = None
     max_size: int = 50
     estimated_wait_time: Optional[int] = None
 
@@ -34,6 +36,8 @@ class QueueResponse(BaseModel):
     provider_id: int
     name: str
     description: Optional[str] = None
+    service_name: Optional[str] = None
+    queue_date: Optional[date] = None
     status: QueueStatus
     max_size: int
     estimated_wait_time: Optional[int] = None

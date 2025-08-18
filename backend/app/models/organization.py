@@ -75,6 +75,7 @@ class Organization(Base):
     users = relationship("User", back_populates="organization")
     providers = relationship("Provider", back_populates="organization")
     clients = relationship("Client", back_populates="organization")
+    pwa_config = relationship("PWAConfig", back_populates="organization", uselist=False)
     
     def __repr__(self):
         return f"<Organization(id={self.id}, name='{self.name}', slug='{self.slug}')>" 

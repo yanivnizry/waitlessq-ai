@@ -147,8 +147,8 @@ start_pwa_generator() {
     
     cd pwa-generator
     
-    # Start PWA generator in background
-    python -m uvicorn main:app --host 0.0.0.0 --port 5001 --reload > ../logs/pwa-generator.log 2>&1 &
+    # Start PWA generator in background with BACKEND_URL environment variable
+    BACKEND_URL=http://localhost:8000 python -m uvicorn main:app --host 0.0.0.0 --port 8001 --reload > ../logs/pwa-generator.log 2>&1 &
     PWA_PID=$!
     echo $PWA_PID > ../logs/pwa-generator.pid
     
@@ -215,8 +215,8 @@ show_status() {
     fi
     
     # Check PWA generator
-    if curl -s http://localhost:5001/health > /dev/null 2>&1; then
-        print_success "PWA Generator: http://localhost:5001"
+    if curl -s http://localhost:8001/health > /dev/null 2>&1; then
+        print_success "PWA Generator: http://localhost:8001"
     else
         print_error "PWA Generator: Not responding"
     fi
@@ -225,7 +225,7 @@ show_status() {
     echo "📋 Access URLs:"
     echo "• Dashboard: http://localhost:3000"
     echo "• API Docs: http://localhost:8000/docs"
-    echo "• PWA Generator: http://localhost:5001"
+    echo "• PWA Generator: http://localhost:8001"
     echo ""
     echo "🚀 Next steps:"
     echo "1. Open http://localhost:3000 in your browser"

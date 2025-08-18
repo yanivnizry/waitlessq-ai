@@ -1,12 +1,14 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
-from typing import List
+from typing import List, Optional
+from datetime import date
 
 from app.core.database import get_db
 from app.models.queue import Queue, QueueEntry
 from app.models.user import User
 from app.schemas.queue import QueueCreate, QueueUpdate, QueueResponse, QueueEntryCreate, QueueEntryUpdate, QueueEntryResponse
 from app.services.auth import get_current_user
+from app.services.queue_manager import QueueManager
 
 router = APIRouter()
 
@@ -94,6 +96,74 @@ async def delete_queue(queue_id: int, db: Session = Depends(get_db)):
     db.delete(queue)
     db.commit()
     return {"message": "Queue deleted successfully"}
+
+@router.get("/daily/{provider_id}", response_model=List[QueueResponse])
+async def get_daily_queues(
+    provider_id: int,
+    target_date: Optional[str] = Query(None, description="Date in YYYY-MM-DD format, defaults to today"),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Get daily service queues for a provider on a specific date"""
+    # Verify the provider belongs to the current user's organization
+    from app.models.provider import Provider
+    provider = db.query(Provider).filter(
+        Provider.id == provider_id,
+        Provider.organization_id == current_user.organization_id
+    ).first()
+    
+    if not provider:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Provider not found or doesn't belong to your organization"
+        )
+    
+    # Parse target date
+    if target_date:
+        try:
+            parsed_date = date.fromisoformat(target_date)
+        except ValueError:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid date format. Use YYYY-MM-DD"
+            )
+    else:
+        parsed_date = date.today()
+    
+    # Get or create daily queues
+    queue_manager = QueueManager(db)
+    daily_queues = queue_manager.create_daily_queues_for_provider(provider_id, parsed_date)
+    
+    return daily_queues
+
+@router.post("/daily/create-all")
+async def create_daily_queues_for_all(
+    target_date: Optional[str] = Query(None, description="Date in YYYY-MM-DD format, defaults to today"),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Create daily queues for all providers (admin function)"""
+    # Parse target date
+    if target_date:
+        try:
+            parsed_date = date.fromisoformat(target_date)
+        except ValueError:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid date format. Use YYYY-MM-DD"
+            )
+    else:
+        parsed_date = date.today()
+    
+    # Create daily queues for all providers
+    queue_manager = QueueManager(db)
+    all_queues = queue_manager.create_daily_queues_for_all_providers(parsed_date)
+    
+    return {
+        "message": f"Created daily queues for {parsed_date}",
+        "queues_created": len(all_queues),
+        "date": str(parsed_date)
+    }
 
 # Queue Entries
 @router.get("/{queue_id}/entries", response_model=List[QueueEntryResponse])

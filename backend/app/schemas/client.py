@@ -40,6 +40,14 @@ class ClientResponse(ClientBase):
     organization_id: int
     total_appointments: int
     last_appointment_date: Optional[datetime] = None
+    
+    # Account and invitation fields
+    has_account: bool
+    invitation_sent_at: Optional[datetime] = None
+    invitation_expires_at: Optional[datetime] = None
+    account_created_at: Optional[datetime] = None
+    last_login_at: Optional[datetime] = None
+    
     created_at: datetime
     updated_at: Optional[datetime] = None
     
@@ -73,3 +81,41 @@ class ClientSummary(BaseModel):
     
     class Config:
         from_attributes = True
+
+class ClientInvitation(BaseModel):
+    """Request to send invitation to a client"""
+    client_id: int
+    send_invitation: bool = True
+
+class ClientInvitationResponse(BaseModel):
+    """Response after sending invitation"""
+    success: bool
+    message: str
+    invitation_sent_at: Optional[datetime] = None
+    invitation_expires_at: Optional[datetime] = None
+
+class ClientRegistration(BaseModel):
+    """Client registration for PWA account"""
+    invitation_token: str
+    password: str = Field(..., min_length=8, max_length=100)
+    confirm_password: str = Field(..., min_length=8, max_length=100)
+
+class ClientRegistrationResponse(BaseModel):
+    """Response after client registration"""
+    success: bool
+    message: str
+    client_id: int
+    access_token: Optional[str] = None
+
+class ClientLoginRequest(BaseModel):
+    """Client login for PWA"""
+    email: EmailStr
+    password: str
+
+class ClientLoginResponse(BaseModel):
+    """Response after client login"""
+    success: bool
+    message: str
+    access_token: str
+    client: ClientResponse
+    providers: list  # List of providers this client has appointments with

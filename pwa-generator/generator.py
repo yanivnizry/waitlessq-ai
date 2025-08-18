@@ -207,7 +207,7 @@ class PWAGenerator:
             "theme_color": pwa_config.get("theme_color", provider_data.get("primary_color", "#3B82F6")) if pwa_config else provider_data.get("primary_color", "#3B82F6"),
             "accent_color": pwa_config.get("accent_color", "#F59E0B") if pwa_config else "#F59E0B",
             "background_color": pwa_config.get("background_color", "#FFFFFF") if pwa_config else "#FFFFFF",
-            "logo_url": pwa_config.get("logo_url") if pwa_config else None,
+            "logo_url": (pwa_config.get("logo_url") or pwa_config.get("icon_url")) if pwa_config else None,
             "organization_id": provider_data.get("organization_id", 1),
             "api_url": os.getenv("BACKEND_URL", "http://localhost:8000"),
             "cache_version": cache_version,

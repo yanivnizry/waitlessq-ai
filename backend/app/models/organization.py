@@ -74,6 +74,7 @@ class Organization(Base):
     # Relationships
     users = relationship("User", back_populates="organization")
     providers = relationship("Provider", back_populates="organization")
+    clients = relationship("Client", back_populates="organization")
     
     def __repr__(self):
         return f"<Organization(id={self.id}, name='{self.name}', slug='{self.slug}')>" 

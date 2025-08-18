@@ -6,6 +6,7 @@ from jose import JWTError, jwt
 from passlib.context import CryptContext
 import re
 from typing import Optional
+import logging
 
 from app.core.database import get_db
 from app.core.config import settings
@@ -18,6 +19,7 @@ from app.services.auth import create_access_token, get_current_user
 router = APIRouter()
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+logger = logging.getLogger(__name__)
 
 def validate_password_strength(password: str) -> tuple[bool, str]:
     """
@@ -230,18 +232,35 @@ async def register_provider(user_info: dict, db: Session = Depends(get_db)):
 
 @router.post("/login", response_model=Token)
 async def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
+    logger.info(f"🔐 Login attempt for email: {form_data.username}")
+    
     # Validate input
     if not form_data.username or not form_data.password:
+        logger.error("🔐 Login failed: Missing email or password")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Email and password are required"
         )
     
     # Find user
+    logger.info(f"🔐 Looking up user: {form_data.username}")
     user = db.query(User).filter(User.email == form_data.username).first()
     
+    if not user:
+        logger.error(f"🔐 User not found: {form_data.username}")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect email or password"
+        )
+    
+    logger.info(f"🔐 User found: {user.email}, checking password...")
+    
     # Verify password
-    if not user or not pwd_context.verify(form_data.password, user.hashed_password):
+    password_valid = pwd_context.verify(form_data.password, user.hashed_password)
+    logger.info(f"🔐 Password valid: {password_valid}")
+    
+    if not password_valid:
+        logger.error(f"🔐 Invalid password for user: {form_data.username}")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect email or password"
@@ -249,13 +268,16 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = 
     
     # Check if user is active
     if not user.is_active:
+        logger.error(f"🔐 User inactive: {form_data.username}")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Inactive user"
         )
     
     # Create access token
+    logger.info(f"🔐 Creating access token for user: {user.email}")
     access_token = create_access_token(data={"sub": user.email})
+    logger.info(f"🔐 Login successful for user: {user.email}")
     
     return {"access_token": access_token, "token_type": "bearer"}
 

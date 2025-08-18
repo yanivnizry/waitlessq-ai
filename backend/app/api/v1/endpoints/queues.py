@@ -4,14 +4,25 @@ from typing import List
 
 from app.core.database import get_db
 from app.models.queue import Queue, QueueEntry
+from app.models.user import User
 from app.schemas.queue import QueueCreate, QueueUpdate, QueueResponse, QueueEntryCreate, QueueEntryUpdate, QueueEntryResponse
+from app.services.auth import get_current_user
 
 router = APIRouter()
 
 @router.get("/", response_model=List[QueueResponse])
-async def get_queues(db: Session = Depends(get_db)):
-    """Get all queues"""
-    queues = db.query(Queue).all()
+async def get_queues(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Get all queues for the current user's organization"""
+    # Get providers for the current user's organization
+    from app.models.provider import Provider
+    providers = db.query(Provider).filter(Provider.organization_id == current_user.organization_id).all()
+    provider_ids = [p.id for p in providers]
+    
+    # Get queues for those providers
+    queues = db.query(Queue).filter(Queue.provider_id.in_(provider_ids)).all()
     return queues
 
 @router.get("/{queue_id}", response_model=QueueResponse)
@@ -23,13 +34,41 @@ async def get_queue(queue_id: int, db: Session = Depends(get_db)):
     return queue
 
 @router.post("/", response_model=QueueResponse)
-async def create_queue(queue: QueueCreate, db: Session = Depends(get_db)):
+async def create_queue(
+    queue: QueueCreate, 
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
     """Create a new queue"""
-    db_queue = Queue(**queue.dict())
-    db.add(db_queue)
-    db.commit()
-    db.refresh(db_queue)
-    return db_queue
+    # Verify the provider belongs to the current user's organization
+    from app.models.provider import Provider
+    provider = db.query(Provider).filter(
+        Provider.id == queue.provider_id,
+        Provider.organization_id == current_user.organization_id
+    ).first()
+    
+    if not provider:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Provider not found or doesn't belong to your organization"
+        )
+    
+    try:
+        # Convert Pydantic model to dict (use model_dump for Pydantic v2)
+        queue_dict = queue.model_dump() if hasattr(queue, 'model_dump') else queue.dict()
+        db_queue = Queue(**queue_dict)
+        db.add(db_queue)
+        db.commit()
+        db.refresh(db_queue)
+        return db_queue
+    except Exception as e:
+        db.rollback()
+        print(f"🚨 Error creating queue: {e}")
+        print(f"🚨 Queue data: {queue}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to create queue: {str(e)}"
+        )
 
 @router.put("/{queue_id}", response_model=QueueResponse)
 async def update_queue(queue_id: int, queue: QueueUpdate, db: Session = Depends(get_db)):

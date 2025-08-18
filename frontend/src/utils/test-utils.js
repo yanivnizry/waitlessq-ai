@@ -1,4 +1,4 @@
-import React from 'react';
+// import React from 'react' // Will be used when custom render functions are needed;
 import { render } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
 

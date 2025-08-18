@@ -28,7 +28,7 @@ interface LoginFormProps {
 
 export function LoginForm({ onSuccess, className }: LoginFormProps) {
   const navigate = useNavigate()
-  const { login, setLoading, setError, clearError } = useAuthStore()
+  const { login, setError, clearError } = useAuthStore()
   const [showPassword, setShowPassword] = React.useState(false)
   const [isLoading, setIsLoading] = React.useState(false)
 
@@ -36,28 +36,64 @@ export function LoginForm({ onSuccess, className }: LoginFormProps) {
     register,
     handleSubmit,
     formState: { errors },
-    setError: setFormError,
   } = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
   })
 
   const onSubmit = async (data: LoginFormData) => {
     try {
+      console.log("🔐 Starting login process...")
       setIsLoading(true)
       clearError()
 
+      console.log("🔐 Calling login API...")
       const response = await api.auth.login(data.email, data.password)
+      console.log("🔐 Login response:", response)
+      
+      // Store token immediately so it's available for the next request
+      console.log("🔐 Storing token in localStorage...")
+      localStorage.setItem("token", response.access_token)
+      
+      // Verify token was stored
+      const storedToken = localStorage.getItem("token")
+      console.log("🔐 Verified stored token:", storedToken ? `${storedToken.substring(0, 50)}...` : "NOT FOUND")
+      
+      // Force a small delay and double-check token availability
+      await new Promise(resolve => setTimeout(resolve, 200))
+      const doubleCheckToken = localStorage.getItem("token")
+      console.log("🔐 Double-check token:", doubleCheckToken ? `${doubleCheckToken.substring(0, 50)}...` : "NOT FOUND")
       
       // Get user data
+      console.log("🔐 Getting current user...")
       const userResponse = await api.auth.getCurrentUser()
+      console.log("🔐 User response:", userResponse)
       
+      console.log("🔐 Storing auth data in store...")
       login(response.access_token, userResponse)
       toast.success("Successfully logged in!")
       
+      console.log("🔐 Navigating to dashboard...")
       onSuccess?.()
       navigate("/dashboard")
+      console.log("🔐 Login process completed!")
     } catch (error: any) {
-      const errorMessage = error.response?.data?.detail || "Login failed. Please try again."
+      console.error("🔐 LOGIN ERROR:", error)
+      console.error("🔐 Error response:", error.response)
+      console.error("🔐 Error data:", error.response?.data)
+      
+      let errorMessage = "Login failed. Please try again."
+      
+      if (error.response?.data?.detail) {
+        const detail = error.response.data.detail
+        if (Array.isArray(detail)) {
+          // Handle validation errors from backend
+          errorMessage = detail.map((err: any) => err.msg).join(", ")
+        } else if (typeof detail === 'string') {
+          errorMessage = detail
+        }
+      }
+      
+      console.error("🔐 Final error message:", errorMessage)
       setError(errorMessage)
       toast.error(errorMessage)
     } finally {
@@ -82,7 +118,11 @@ export function LoginForm({ onSuccess, className }: LoginFormProps) {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+          <form onSubmit={(e) => {
+            console.log("🔐 Form submit event triggered")
+            e.preventDefault()
+            handleSubmit(onSubmit)(e)
+          }} className="space-y-4">
             <div className="space-y-2">
               <label htmlFor="email" className="text-sm font-medium">
                 Email
@@ -95,7 +135,7 @@ export function LoginForm({ onSuccess, className }: LoginFormProps) {
                 className={cn(errors.email && "border-red-500")}
               />
               {errors.email && (
-                <p className="text-sm text-red-500">{errors.email.message}</p>
+                <p className="text-sm text-red-500">{errors.email.message?.toString()}</p>
               )}
             </div>
 
@@ -126,7 +166,7 @@ export function LoginForm({ onSuccess, className }: LoginFormProps) {
                 </Button>
               </div>
               {errors.password && (
-                <p className="text-sm text-red-500">{errors.password.message}</p>
+                <p className="text-sm text-red-500">{errors.password.message?.toString()}</p>
               )}
             </div>
 

@@ -9,16 +9,32 @@ import { useAuthStore } from "./store/auth-store"
 import { LoginForm } from "./components/Auth/LoginForm"
 import { RegisterForm } from "./components/Auth/RegisterForm"
 import { ProtectedRoute } from "./components/Auth/ProtectedRoute"
-import { Dashboard } from "./components/Dashboard/Dashboard"
+import { DashboardFreshFixed as DashboardFresh } from "./components/Dashboard/DashboardFreshFixed"
+import { Providers } from "./components/Providers/Providers"
+import { Clients } from "./components/Clients/Clients"
+import { Appointments } from "./components/Appointments/Appointments"
+import { Queues } from "./components/Queues/Queues"
+import { Availability } from "./components/Availability/Availability"
+import Calendar from "./components/Calendar/Calendar"
+import Services from "./components/Services/Services"
+import Gamification from "./components/Gamification/Gamification"
 import { Layout } from "./components/Layout/Layout"
 
-// Create a client
+// Create a client with more conservative retry settings
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       staleTime: 5 * 60 * 1000, // 5 minutes
       gcTime: 10 * 60 * 1000, // 10 minutes
-      retry: 1,
+      retry: (failureCount, error: any) => {
+        // Don't retry on auth errors (401, 403) or rate limiting (429)
+        if (error?.response?.status === 401 || error?.response?.status === 403 || error?.response?.status === 429) {
+          return false
+        }
+        // Only retry up to 2 times for other errors
+        return failureCount < 2
+      },
+      retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000), // Exponential backoff, max 30s
       refetchOnWindowFocus: false,
     },
   },
@@ -30,7 +46,12 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-        <Router>
+        <Router
+          future={{
+            v7_startTransition: true,
+            v7_relativeSplatPath: true,
+          }}
+        >
           <div className="min-h-screen bg-background">
             <Routes>
               {/* Public routes */}
@@ -66,7 +87,103 @@ function App() {
                 element={
                   <ProtectedRoute>
                     <Layout>
-                      <Dashboard />
+                      <DashboardFresh />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+
+              {/* Providers route */}
+              <Route
+                path="/providers"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <Providers />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+
+              {/* Clients route */}
+              <Route
+                path="/clients"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <Clients />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+
+              {/* Appointments route */}
+              <Route
+                path="/appointments"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <Appointments />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+
+              {/* Queues route */}
+              <Route
+                path="/queues"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <Queues />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+
+              {/* Availability route */}
+              <Route
+                path="/availability"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <Availability />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+
+              {/* Calendar route */}
+              <Route
+                path="/calendar"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <Calendar />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+
+              {/* Services route */}
+              <Route
+                path="/services"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <Services />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+
+              {/* Achievements route */}
+              <Route
+                path="/achievements"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <Gamification />
                     </Layout>
                   </ProtectedRoute>
                 }

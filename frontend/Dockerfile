@@ -11,7 +11,7 @@ RUN apk update && apk upgrade && apk add --no-cache dumb-init
 COPY package*.json ./
 
 # Install dependencies (including dev dependencies for build)
-RUN npm ci --only=production=false && npm cache clean --force
+RUN npm ci && npm cache clean --force
 
 # Copy source code
 COPY . .

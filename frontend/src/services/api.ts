@@ -42,6 +42,9 @@ api.interceptors.request.use(
     const token = localStorage.getItem('token');
     if (token && config.headers) {
       config.headers.Authorization = `Bearer ${token}`;
+      console.log(`🔐 API Request: ${config.url} Token: ${token.substring(0, 50)}...`);
+    } else {
+      console.log(`🔐 API Request: ${config.url} (No token)`);
     }
     
     // Add security headers
@@ -111,6 +114,8 @@ export const authAPI = {
   },
 
   login: async (email: string, password: string) => {
+    console.log('🔐 Starting login process...');
+    
     // Validate input
     if (!email || !password) {
       throw new Error('Email and password are required');
@@ -118,19 +123,24 @@ export const authAPI = {
     
     // Sanitize email
     const sanitizedEmail = email.toLowerCase().trim();
+    console.log('🔐 Calling login API...');
     
-    const formData = new FormData();
+    // Use URLSearchParams for application/x-www-form-urlencoded
+    const formData = new URLSearchParams();
     formData.append('username', sanitizedEmail);
     formData.append('password', password);
     
     try {
       const response = await api.post('/auth/login', formData, {
         headers: {
-          'Content-Type': 'multipart/form-data',
+          'Content-Type': 'application/x-www-form-urlencoded',
         },
       });
+      
+      console.log('🔐 Login response:', response.data);
       return response.data;
     } catch (error: any) {
+      console.error('🔐 Login error:', error);
       if (error.response?.status === 401) {
         throw new Error('Invalid email or password');
       }
@@ -173,10 +183,14 @@ export const authAPI = {
 
   getCurrentUser: async () => {
     try {
+      console.log('🔐 Getting current user...');
       const response = await api.get('/auth/me');
+      console.log('🔐 Current user response:', response.data);
       return response.data;
     } catch (error: any) {
+      console.error('🔐 getCurrentUser error:', error);
       if (error.response?.status === 401) {
+        console.log('🔐 401 error - removing token');
         localStorage.removeItem('token');
         throw new Error('Session expired. Please login again.');
       }
@@ -418,6 +432,394 @@ export const queuesAPI = {
         throw new Error('Queue not found');
       }
       throw new Error('Failed to delete queue');
+    }
+  },
+
+  // Queue Entries API
+  getQueueEntries: async (queueId: number) => {
+    if (!queueId || queueId <= 0) {
+      throw new Error('Invalid queue ID');
+    }
+    
+    try {
+      const response = await api.get(`/queues/${queueId}/entries`);
+      return response.data;
+    } catch (error: any) {
+      if (error.response?.status === 404) {
+        throw new Error('Queue not found');
+      }
+      throw new Error('Failed to fetch queue entries');
+    }
+  },
+
+  addQueueEntry: async (queueId: number, entryData: any) => {
+    if (!queueId || queueId <= 0) {
+      throw new Error('Invalid queue ID');
+    }
+    
+    try {
+      const response = await api.post(`/queues/${queueId}/entries`, entryData);
+      return response.data;
+    } catch (error: any) {
+      if (error.response?.data?.detail) {
+        throw new Error(error.response.data.detail);
+      }
+      throw new Error('Failed to add queue entry');
+    }
+  },
+
+  updateQueueEntry: async (queueId: number, entryId: number, entryData: any) => {
+    if (!queueId || queueId <= 0 || !entryId || entryId <= 0) {
+      throw new Error('Invalid queue or entry ID');
+    }
+    
+    try {
+      const response = await api.put(`/queues/${queueId}/entries/${entryId}`, entryData);
+      return response.data;
+    } catch (error: any) {
+      if (error.response?.status === 404) {
+        throw new Error('Queue entry not found');
+      }
+      throw new Error('Failed to update queue entry');
+    }
+  },
+
+  removeQueueEntry: async (queueId: number, entryId: number) => {
+    if (!queueId || queueId <= 0 || !entryId || entryId <= 0) {
+      throw new Error('Invalid queue or entry ID');
+    }
+    
+    try {
+      const response = await api.delete(`/queues/${queueId}/entries/${entryId}`);
+      return response.data;
+    } catch (error: any) {
+      if (error.response?.status === 404) {
+        throw new Error('Queue entry not found');
+      }
+      throw new Error('Failed to remove queue entry');
+    }
+  },
+};
+
+// Services API
+export const servicesAPI = {
+  getServices: async (params?: { 
+    page?: number; 
+    per_page?: number; 
+    search?: string; 
+    category?: string;
+    provider_id?: number;
+    is_active?: boolean;
+  }) => {
+    try {
+      const response = await api.get('/services/', { params });
+      return response.data;
+    } catch (error: any) {
+      throw new Error('Failed to fetch services');
+    }
+  },
+
+  getService: async (id: number) => {
+    if (!id || id <= 0) {
+      throw new Error('Invalid service ID');
+    }
+    
+    try {
+      const response = await api.get(`/services/${id}/`);
+      return response.data;
+    } catch (error: any) {
+      if (error.response?.status === 404) {
+        throw new Error('Service not found');
+      }
+      throw new Error('Failed to fetch service');
+    }
+  },
+
+  createService: async (serviceData: any) => {
+    try {
+      const response = await api.post('/services/', serviceData);
+      return response.data;
+    } catch (error: any) {
+      if (error.response?.data?.detail) {
+        throw new Error(error.response.data.detail);
+      }
+      throw new Error('Failed to create service');
+    }
+  },
+
+  updateService: async (id: number, serviceData: any) => {
+    if (!id || id <= 0) {
+      throw new Error('Invalid service ID');
+    }
+    
+    try {
+      const response = await api.put(`/services/${id}/`, serviceData);
+      return response.data;
+    } catch (error: any) {
+      if (error.response?.status === 404) {
+        throw new Error('Service not found');
+      }
+      if (error.response?.data?.detail) {
+        throw new Error(error.response.data.detail);
+      }
+      throw new Error('Failed to update service');
+    }
+  },
+
+  deleteService: async (id: number) => {
+    if (!id || id <= 0) {
+      throw new Error('Invalid service ID');
+    }
+    
+    try {
+      const response = await api.delete(`/services/${id}/`);
+      return response.data;
+    } catch (error: any) {
+      if (error.response?.status === 404) {
+        throw new Error('Service not found');
+      }
+      throw new Error('Failed to delete service');
+    }
+  },
+
+  getServiceStats: async () => {
+    try {
+      const response = await api.get('/services/stats/');
+      return response.data;
+    } catch (error: any) {
+      throw new Error('Failed to fetch service statistics');
+    }
+  },
+
+  getCategories: async () => {
+    try {
+      const response = await api.get('/services/categories/list/');
+      return response.data;
+    } catch (error: any) {
+      throw new Error('Failed to fetch service categories');
+    }
+  },
+
+  getTimeSlots: async (providerId: number, date: string) => {
+    if (!providerId || providerId <= 0) {
+      throw new Error('Invalid provider ID');
+    }
+    
+    try {
+      const response = await api.get(`/services/timeslots/${providerId}/?date=${date}`);
+      return response.data;
+    } catch (error: any) {
+      if (error.response?.status === 404) {
+        throw new Error('Provider not found');
+      }
+      throw new Error('Failed to fetch time slots');
+    }
+  },
+};
+
+// Availability API
+export const availabilityAPI = {
+  getWeeklySchedule: async (providerId: number) => {
+    if (!providerId || providerId <= 0) {
+      throw new Error('Invalid provider ID');
+    }
+    
+    try {
+      const response = await api.get(`/availability/provider/${providerId}/weekly`);
+      return response.data;
+    } catch (error: any) {
+      if (error.response?.status === 404) {
+        throw new Error('Provider not found');
+      }
+      throw new Error('Failed to fetch weekly schedule');
+    }
+  },
+
+  createAvailability: async (availabilityData: any) => {
+    try {
+      const response = await api.post('/availability', availabilityData);
+      return response.data;
+    } catch (error: any) {
+      if (error.response?.data?.detail) {
+        throw new Error(error.response.data.detail);
+      }
+      throw new Error('Failed to create availability');
+    }
+  },
+
+  updateAvailability: async (id: number, availabilityData: any) => {
+    if (!id || id <= 0) {
+      throw new Error('Invalid availability ID');
+    }
+    
+    try {
+      const response = await api.put(`/availability/${id}`, availabilityData);
+      return response.data;
+    } catch (error: any) {
+      if (error.response?.status === 404) {
+        throw new Error('Availability rule not found');
+      }
+      if (error.response?.data?.detail) {
+        throw new Error(error.response.data.detail);
+      }
+      throw new Error('Failed to update availability');
+    }
+  },
+
+  deleteAvailability: async (id: number) => {
+    if (!id || id <= 0) {
+      throw new Error('Invalid availability ID');
+    }
+    
+    try {
+      const response = await api.delete(`/availability/${id}`);
+      return response.data;
+    } catch (error: any) {
+      if (error.response?.status === 404) {
+        throw new Error('Availability rule not found');
+      }
+      throw new Error('Failed to delete availability');
+    }
+  },
+
+  createBulkAvailability: async (bulkData: any) => {
+    try {
+      const response = await api.post('/availability/bulk', bulkData);
+      return response.data;
+    } catch (error: any) {
+      if (error.response?.data?.detail) {
+        throw new Error(error.response.data.detail);
+      }
+      throw new Error('Failed to create bulk availability');
+    }
+  },
+
+  createException: async (exceptionData: any) => {
+    try {
+      const response = await api.post('/availability/exceptions', exceptionData);
+      return response.data;
+    } catch (error: any) {
+      if (error.response?.data?.detail) {
+        throw new Error(error.response.data.detail);
+      }
+      throw new Error('Failed to create availability exception');
+    }
+  },
+
+  getStats: async (providerId: number) => {
+    if (!providerId || providerId <= 0) {
+      throw new Error('Invalid provider ID');
+    }
+    
+    try {
+      const response = await api.get(`/availability/provider/${providerId}/stats`);
+      return response.data;
+    } catch (error: any) {
+      if (error.response?.status === 404) {
+        throw new Error('Provider not found');
+      }
+      throw new Error('Failed to fetch availability statistics');
+    }
+  },
+};
+
+// Clients API
+export const clientsAPI = {
+  getClients: async (params?: { 
+    page?: number; 
+    per_page?: number; 
+    search?: string; 
+    is_active?: boolean;
+  }) => {
+    try {
+      const response = await api.get('/clients/', { params });
+      return response.data;
+    } catch (error: any) {
+      throw new Error('Failed to fetch clients');
+    }
+  },
+
+  getClientsSummary: async (params?: { 
+    search?: string; 
+    limit?: number;
+  }) => {
+    try {
+      const response = await api.get('/clients/summary/', { params });
+      return response.data;
+    } catch (error: any) {
+      throw new Error('Failed to fetch clients summary');
+    }
+  },
+
+  getClient: async (id: number) => {
+    if (!id || id <= 0) {
+      throw new Error('Invalid client ID');
+    }
+    
+    try {
+      const response = await api.get(`/clients/${id}/`);
+      return response.data;
+    } catch (error: any) {
+      if (error.response?.status === 404) {
+        throw new Error('Client not found');
+      }
+      throw new Error('Failed to fetch client');
+    }
+  },
+
+  createClient: async (clientData: any) => {
+    try {
+      const response = await api.post('/clients/', clientData);
+      return response.data;
+    } catch (error: any) {
+      if (error.response?.data?.detail) {
+        throw new Error(error.response.data.detail);
+      }
+      throw new Error('Failed to create client');
+    }
+  },
+
+  updateClient: async (id: number, clientData: any) => {
+    if (!id || id <= 0) {
+      throw new Error('Invalid client ID');
+    }
+    
+    try {
+      const response = await api.put(`/clients/${id}/`, clientData);
+      return response.data;
+    } catch (error: any) {
+      if (error.response?.status === 404) {
+        throw new Error('Client not found');
+      }
+      if (error.response?.data?.detail) {
+        throw new Error(error.response.data.detail);
+      }
+      throw new Error('Failed to update client');
+    }
+  },
+
+  deleteClient: async (id: number) => {
+    if (!id || id <= 0) {
+      throw new Error('Invalid client ID');
+    }
+    
+    try {
+      const response = await api.delete(`/clients/${id}/`);
+      return response.data;
+    } catch (error: any) {
+      if (error.response?.status === 404) {
+        throw new Error('Client not found');
+      }
+      throw new Error('Failed to delete client');
+    }
+  },
+
+  getClientStats: async () => {
+    try {
+      const response = await api.get('/clients/stats/overview/');
+      return response.data;
+    } catch (error: any) {
+      throw new Error('Failed to fetch client statistics');
     }
   },
 };

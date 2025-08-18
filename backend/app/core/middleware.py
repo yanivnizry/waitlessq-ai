@@ -180,8 +180,10 @@ class SecurityMiddleware:
                 }
                 
                 for header, value in security_headers.items():
-                    if header not in headers:
-                        headers[header] = value.encode()
+                    header_key = header.encode() if isinstance(header, str) else header
+                    if header_key not in headers:
+                        header_value = value.encode() if isinstance(value, str) else value
+                        headers[header_key] = header_value
                 
                 message["headers"] = list(headers.items())
             

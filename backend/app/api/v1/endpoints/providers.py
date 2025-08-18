@@ -90,7 +90,7 @@ async def get_providers(
         if search:
             query = query.filter(
                 Provider.business_name.ilike(f"%{search}%") |
-                Provider.contact_email.ilike(f"%{search}%")
+                Provider.business_description.ilike(f"%{search}%")
             )
         
         providers = query.offset(skip).limit(limit).all()
@@ -148,15 +148,8 @@ async def create_provider(
             detail=error_message
         )
     
-    # Validate email
-    if not validate_email(provider_data.contact_email):
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid email format"
-        )
-    
-    # Validate phone
-    if provider_data.contact_phone and not validate_phone(provider_data.contact_phone):
+    # Validate phone if provided
+    if provider_data.phone and not validate_phone(provider_data.phone):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Invalid phone number format"
@@ -171,28 +164,41 @@ async def create_provider(
                 detail=error_message
             )
     
-    # Check if provider with same email already exists
+    # Check if provider with same business name already exists for this organization
     existing_provider = db.query(Provider).filter(
-        Provider.contact_email == provider_data.contact_email
+        Provider.business_name == provider_data.business_name,
+        Provider.organization_id == current_user.organization_id
     ).first()
     
     if existing_provider:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Provider with this email already exists"
+            detail="Provider with this business name already exists in your organization"
         )
     
     try:
         # Sanitize input data
         provider = Provider(
+            organization_id=current_user.organization_id,
+            user_id=current_user.id,
             business_name=sanitize_string(provider_data.business_name),
-            contact_email=provider_data.contact_email.lower().strip(),
-            contact_phone=sanitize_string(provider_data.contact_phone) if provider_data.contact_phone else None,
+            business_description=sanitize_string(provider_data.business_description) if provider_data.business_description else None,
+            business_type=sanitize_string(provider_data.business_type) if provider_data.business_type else None,
+            phone=sanitize_string(provider_data.phone) if provider_data.phone else None,
+            website=sanitize_string(provider_data.website) if provider_data.website else None,
             address=sanitize_string(provider_data.address) if provider_data.address else None,
-            services=provider_data.services,
-            operating_hours=provider_data.operating_hours,
-            is_active=True,
-            created_by=current_user.id
+            city=sanitize_string(provider_data.city) if provider_data.city else None,
+            state=sanitize_string(provider_data.state) if provider_data.state else None,
+            zip_code=sanitize_string(provider_data.zip_code) if provider_data.zip_code else None,
+            country=sanitize_string(provider_data.country) if provider_data.country else None,
+            business_hours=provider_data.business_hours,
+            accepts_walk_ins=provider_data.accepts_walk_ins,
+            max_queue_size=provider_data.max_queue_size,
+            appointment_duration=provider_data.appointment_duration,
+            buffer_time=provider_data.buffer_time,
+            logo_url=sanitize_string(provider_data.logo_url) if provider_data.logo_url else None,
+            primary_color=provider_data.primary_color,
+            secondary_color=provider_data.secondary_color,
         )
         
         db.add(provider)
@@ -239,28 +245,11 @@ async def update_provider(
                 detail=error_message
             )
     
-    # Validate email if provided
-    if provider_data.contact_email is not None:
-        if not validate_email(provider_data.contact_email):
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Invalid email format"
-            )
-        
-        # Check if email is already used by another provider
-        existing_provider = db.query(Provider).filter(
-            Provider.contact_email == provider_data.contact_email,
-            Provider.id != provider_id
-        ).first()
-        
-        if existing_provider:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Email is already used by another provider"
-            )
+    # No email validation needed since Provider model doesn't have email field
+
     
     # Validate phone if provided
-    if provider_data.contact_phone is not None and not validate_phone(provider_data.contact_phone):
+    if provider_data.phone is not None and not validate_phone(provider_data.phone):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Invalid phone number format"
@@ -282,10 +271,9 @@ async def update_provider(
         # Sanitize string fields
         if 'business_name' in update_data:
             update_data['business_name'] = sanitize_string(update_data['business_name'])
-        if 'contact_email' in update_data:
-            update_data['contact_email'] = update_data['contact_email'].lower().strip()
-        if 'contact_phone' in update_data:
-            update_data['contact_phone'] = sanitize_string(update_data['contact_phone'])
+        # No email field to sanitize
+        if 'phone' in update_data:
+            update_data['phone'] = sanitize_string(update_data['phone'])
         if 'address' in update_data:
             update_data['address'] = sanitize_string(update_data['address'])
         

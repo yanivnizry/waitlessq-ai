@@ -34,13 +34,41 @@ async def get_appointment(appointment_id: int, db: Session = Depends(get_db)):
     return appointment
 
 @router.post("/", response_model=AppointmentResponse)
-async def create_appointment(appointment: AppointmentCreate, db: Session = Depends(get_db)):
+async def create_appointment(
+    appointment: AppointmentCreate, 
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
     """Create a new appointment"""
-    db_appointment = Appointment(**appointment.dict())
-    db.add(db_appointment)
-    db.commit()
-    db.refresh(db_appointment)
-    return db_appointment
+    # Verify the provider belongs to the current user's organization
+    from app.models.provider import Provider
+    provider = db.query(Provider).filter(
+        Provider.id == appointment.provider_id,
+        Provider.organization_id == current_user.organization_id
+    ).first()
+    
+    if not provider:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Provider not found or doesn't belong to your organization"
+        )
+    
+    try:
+        # Convert Pydantic model to dict (use model_dump for Pydantic v2)
+        appointment_dict = appointment.model_dump() if hasattr(appointment, 'model_dump') else appointment.dict()
+        db_appointment = Appointment(**appointment_dict)
+        db.add(db_appointment)
+        db.commit()
+        db.refresh(db_appointment)
+        return db_appointment
+    except Exception as e:
+        db.rollback()
+        print(f"🚨 Error creating appointment: {e}")
+        print(f"🚨 Appointment data: {appointment}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to create appointment: {str(e)}"
+        )
 
 @router.put("/{appointment_id}", response_model=AppointmentResponse)
 async def update_appointment(appointment_id: int, appointment: AppointmentUpdate, db: Session = Depends(get_db)):

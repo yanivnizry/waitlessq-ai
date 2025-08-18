@@ -48,9 +48,7 @@ if settings.is_development and not cors_origins:
     # Default development origins - ONLY for development
     cors_origins = [
         "http://localhost:3000",
-        "http://localhost:3001",
         "http://127.0.0.1:3000",
-        "http://127.0.0.1:3001"
     ]
 
 # In production, CORS_ORIGINS must be explicitly set

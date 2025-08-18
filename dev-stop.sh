@@ -91,7 +91,7 @@ main() {
     # Fallback: kill by port if PID files don't exist
     kill_by_port 8000 "Backend API"
     kill_by_port 3000 "Frontend"
-    kill_by_port 5001 "PWA Generator"
+    kill_by_port 8001 "PWA Generator"
     
     # Clean up log files
     if [ -d "logs" ]; then
@@ -106,7 +106,7 @@ main() {
     echo "📋 Services stopped:"
     echo "• Backend API (port 8000)"
     echo "• Frontend Dashboard (port 3000)"
-    echo "• PWA Generator (port 5001)"
+    echo "• PWA Generator (port 8001)"
     echo ""
     echo "🚀 To start services again: ./dev-start.sh"
     echo ""

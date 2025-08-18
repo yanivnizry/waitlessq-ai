@@ -4,6 +4,27 @@ Simple scripts to manage the WaitLessQ development environment.
 
 ## 🚀 Quick Start
 
+### ⭐ Restart All Services (Recommended)
+```bash
+./restart-dev.sh
+```
+
+**The most reliable way to start/restart your development environment**
+
+This will:
+- 🛑 **Smart Stop**: Kill all services by port AND process pattern
+- ⏳ **Port Cleanup**: Wait for ports to be completely free  
+- 🚀 **Clean Start**: Start all services fresh with proper logging
+- 🏥 **Health Checks**: Verify each service is responding
+- 📋 **Process Tracking**: Save PIDs for clean management
+- 📊 **Detailed Logging**: All output saved to `logs/` directory
+
+**Use this when:**
+- Starting development for the first time
+- Services are stuck or not responding  
+- After making configuration changes
+- When you see "port already in use" errors
+
 ### Start All Services
 ```bash
 ./dev-start.sh
@@ -39,13 +60,24 @@ This will:
 - ✅ Display access URLs
 - ✅ Provide summary
 
+### Get Help & Commands
+```bash
+./dev-help.sh
+```
+
+This will:
+- 📋 Show all available development commands
+- 🔗 Display service URLs and ports
+- 💡 Provide troubleshooting tips
+- 🚀 List quick actions
+
 ## 📋 Services
 
 | Service | Port | URL | Description |
 |---------|------|-----|-------------|
 | Frontend Dashboard | 3000 | http://localhost:3000 | React development server |
 | Backend API | 8000 | http://localhost:8000 | FastAPI backend server |
-| PWA Generator | 5001 | http://localhost:5001 | PWA generation service |
+| PWA Generator | 8001 | http://localhost:8001 | PWA generation service |
 
 ## 🛠️ Features
 

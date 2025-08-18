@@ -17,6 +17,9 @@ class Appointment(Base):
     
     id = Column(Integer, primary_key=True, index=True)
     provider_id = Column(Integer, ForeignKey("providers.id"), nullable=False)
+    client_id = Column(Integer, ForeignKey("clients.id"), nullable=True)  # Optional for backward compatibility
+    
+    # Legacy client fields (kept for backward compatibility)
     client_name = Column(String(255), nullable=False)
     client_email = Column(String(255))
     client_phone = Column(String(20))
@@ -47,6 +50,8 @@ class Appointment(Base):
     
     # Relationships
     provider = relationship("Provider", back_populates="appointments")
+    client = relationship("Client", back_populates="appointments")
+    location_tracking = relationship("LocationTracking", back_populates="appointment")
     
     def __repr__(self):
         return f"<Appointment(id={self.id}, client_name='{self.client_name}', scheduled_at='{self.scheduled_at}')>" 

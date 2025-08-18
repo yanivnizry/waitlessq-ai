@@ -8,25 +8,38 @@ import {
   Settings, 
   LogOut,
   Menu,
-  X
+  X,
+  UserCheck,
+  CalendarClock,
+  Briefcase,
+  Trophy
 } from "lucide-react"
 import { useNavigate, useLocation } from "react-router-dom"
 
-import { Button } from "@/components/ui/button"
-import { useAuthStore } from "@/store/auth-store"
-import { cn } from "@/lib/utils"
+import { Button } from "../ui/button"
+import { useAuthStore } from "../../store/auth-store"
+import { cn } from "../../lib/utils"
 
 interface LayoutProps {
   children: React.ReactNode
 }
 
+// Navigation updated at 2024-12-20 18:45 - ADDED GAMIFICATION - FORCE CACHE BREAK v5
 const navigation = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
+  { name: "Calendar", href: "/calendar", icon: Calendar },
   { name: "Providers", href: "/providers", icon: Users },
-  { name: "Appointments", href: "/appointments", icon: Calendar },
+  { name: "Services", href: "/services", icon: Briefcase },
+  { name: "Clients", href: "/clients", icon: UserCheck },
+  { name: "Appointments", href: "/appointments", icon: CalendarClock },
   { name: "Queues", href: "/queues", icon: Clock },
+  { name: "Availability", href: "/availability", icon: CalendarClock },
+  { name: "Achievements", href: "/achievements", icon: Trophy },
   { name: "Settings", href: "/settings", icon: Settings },
 ]
+
+// Debug: Log navigation to console to verify it's loading
+console.log("🔥 NAVIGATION LOADED:", navigation.map(n => n.name))
 
 export function Layout({ children }: LayoutProps) {
   const navigate = useNavigate()
@@ -56,7 +69,10 @@ export function Layout({ children }: LayoutProps) {
         >
           <div className="flex h-full flex-col">
             <div className="flex h-16 items-center justify-between px-4 border-b">
-              <h1 className="text-xl font-bold">WaitLessQ</h1>
+              <div className="flex items-center">
+                <h1 className="text-xl font-bold">WaitLessQ</h1>
+                <div className="ml-2 text-xs text-yellow-500">🏆 GAM v1.0</div>
+              </div>
               <Button
                 variant="ghost"
                 size="icon"
@@ -117,11 +133,12 @@ export function Layout({ children }: LayoutProps) {
         <div className="flex grow flex-col gap-y-5 overflow-y-auto bg-card border-r px-6">
           <div className="flex h-16 shrink-0 items-center">
             <h1 className="text-xl font-bold">WaitLessQ</h1>
+            <div className="ml-2 text-xs text-green-500">LIVE</div>
           </div>
           <nav className="flex flex-1 flex-col">
-            <ul role="list" className="flex flex-1 flex-col gap-y-7">
+            <ul className="flex flex-1 flex-col gap-y-7">
               <li>
-                <ul role="list" className="-mx-2 space-y-1">
+                <ul className="-mx-2 space-y-1">
                   {navigation.map((item) => {
                     const isActive = location.pathname === item.href
                     return (

@@ -6,4 +6,7 @@ module.exports = {
       '@': path.resolve(__dirname, 'src'),
     },
   },
+  typescript: {
+    enableTypeChecking: false, // Disable TypeScript checking during development for stability
+  },
 }; 

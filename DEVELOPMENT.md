@@ -224,7 +224,7 @@ npm test
 npm test -- --coverage
 
 # Run specific test
-npm test -- --testNamePattern="Login"
+npm test -- --testNamePattern="ComponentName"
 ```
 
 ### Integration Testing

@@ -67,7 +67,10 @@ class Provider(Base):
     user = relationship("User", back_populates="providers")
     appointments = relationship("Appointment", back_populates="provider")
     queues = relationship("Queue", back_populates="provider")
+    services = relationship("Service", back_populates="provider")
+    availability = relationship("Availability", back_populates="provider")
     pwa_config = relationship("PWAConfig", back_populates="provider", uselist=False)
+    office_locations = relationship("ProviderOfficeLocation", back_populates="provider")
     
     def __repr__(self):
         return f"<Provider(id={self.id}, business_name='{self.business_name}', organization_id={self.organization_id})>" 

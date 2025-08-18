@@ -67,10 +67,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const login = async (email: string, password: string) => {
     try {
       const response = await authAPI.login(email, password);
+      console.log('🔐 Storing token in localStorage...');
       localStorage.setItem('token', response.access_token);
       authAPI.setToken(response.access_token);
+      console.log('🔐 Verified stored token:', localStorage.getItem('token')?.substring(0, 50) + '...');
       await checkAuthStatus();
     } catch (error) {
+      console.error('🔐 Login failed in AuthContext:', error);
       throw error;
     }
   };

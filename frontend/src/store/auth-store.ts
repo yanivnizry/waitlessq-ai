@@ -43,21 +43,27 @@ export const useAuthStore = create<AuthStore>()(
       error: null,
 
       // Actions
-      login: (token: string, user: User) =>
+      login: (token: string, user: User) => {
+        // Store token in localStorage for API client
+        localStorage.setItem("token", token)
         set({
           token,
           user,
           isAuthenticated: true,
           error: null,
-        }),
+        })
+      },
 
-      logout: () =>
+      logout: () => {
+        // Remove token from localStorage
+        localStorage.removeItem("token")
         set({
           token: null,
           user: null,
           isAuthenticated: false,
           error: null,
-        }),
+        })
+      },
 
       setUser: (user: User) =>
         set({
@@ -65,11 +71,14 @@ export const useAuthStore = create<AuthStore>()(
           isAuthenticated: true,
         }),
 
-      setToken: (token: string) =>
+      setToken: (token: string) => {
+        // Store token in localStorage for API client
+        localStorage.setItem("token", token)
         set({
           token,
           isAuthenticated: true,
-        }),
+        })
+      },
 
       setLoading: (isLoading: boolean) =>
         set({

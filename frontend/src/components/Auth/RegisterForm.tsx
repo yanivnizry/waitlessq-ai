@@ -3,7 +3,7 @@ import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
 import { motion } from "framer-motion"
-import { Eye, EyeOff, Loader2, Check, X } from "lucide-react"
+import { Eye, EyeOff, Loader2 } from "lucide-react"
 import { toast } from "sonner"
 import { useNavigate } from "react-router-dom"
 
@@ -85,7 +85,7 @@ export function RegisterForm({ onSuccess, className }: RegisterFormProps) {
       setIsLoading(true)
       clearError()
 
-      const response = await api.auth.register({
+      await api.auth.register({
         email: data.email,
         password: data.password,
         full_name: data.full_name,
@@ -102,7 +102,18 @@ export function RegisterForm({ onSuccess, className }: RegisterFormProps) {
       onSuccess?.()
       navigate("/dashboard")
     } catch (error: any) {
-      const errorMessage = error.response?.data?.detail || "Registration failed. Please try again."
+      let errorMessage = "Registration failed. Please try again."
+      
+      if (error.response?.data?.detail) {
+        const detail = error.response.data.detail
+        if (Array.isArray(detail)) {
+          // Handle validation errors from backend
+          errorMessage = detail.map((err: any) => err.msg).join(", ")
+        } else if (typeof detail === 'string') {
+          errorMessage = detail
+        }
+      }
+      
       setError(errorMessage)
       toast.error(errorMessage)
     } finally {
@@ -140,7 +151,7 @@ export function RegisterForm({ onSuccess, className }: RegisterFormProps) {
                 className={cn(errors.full_name && "border-red-500")}
               />
               {errors.full_name && (
-                <p className="text-sm text-red-500">{errors.full_name.message}</p>
+                <p className="text-sm text-red-500">{errors.full_name.message?.toString()}</p>
               )}
             </div>
 
@@ -156,7 +167,7 @@ export function RegisterForm({ onSuccess, className }: RegisterFormProps) {
                 className={cn(errors.email && "border-red-500")}
               />
               {errors.email && (
-                <p className="text-sm text-red-500">{errors.email.message}</p>
+                <p className="text-sm text-red-500">{errors.email.message?.toString()}</p>
               )}
             </div>
 
@@ -231,7 +242,7 @@ export function RegisterForm({ onSuccess, className }: RegisterFormProps) {
               )}
               
               {errors.password && (
-                <p className="text-sm text-red-500">{errors.password.message}</p>
+                <p className="text-sm text-red-500">{errors.password.message?.toString()}</p>
               )}
             </div>
 
@@ -262,7 +273,7 @@ export function RegisterForm({ onSuccess, className }: RegisterFormProps) {
                 </Button>
               </div>
               {errors.confirmPassword && (
-                <p className="text-sm text-red-500">{errors.confirmPassword.message}</p>
+                <p className="text-sm text-red-500">{errors.confirmPassword.message?.toString()}</p>
               )}
             </div>
 

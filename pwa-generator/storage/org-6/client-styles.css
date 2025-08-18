@@ -1,5 +1,5 @@
 :root {
-  --primary-color: #6366f1;
+  --primary-color: #404045;
   --accent-color: #dc045b;
   --background-color: #ffffff;
   --surface-color: #ffffff;
@@ -16,7 +16,7 @@
   --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   
   /* Modern Colorful Gradients */
-  --gradient-primary: linear-gradient(135deg, #6366f1, #dc045b);
+  --gradient-primary: linear-gradient(135deg, #404045, #dc045b);
   --gradient-secondary: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   --gradient-success: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
   --gradient-warning: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);

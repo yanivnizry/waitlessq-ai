@@ -38,6 +38,7 @@ class PWAConfig(Base):
     
     # Icons and Images
     logo_url = Column(String(500))
+    icon_url = Column(String(500))
     icon_192_url = Column(String(500))
     icon_512_url = Column(String(500))
     favicon_url = Column(String(500))

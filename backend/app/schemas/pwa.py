@@ -116,6 +116,7 @@ class PWAConfigCreate(BaseModel):
     
     # Images
     logo_url: Optional[str] = None
+    icon_url: Optional[str] = None
     icon_192_url: Optional[str] = None
     icon_512_url: Optional[str] = None
     favicon_url: Optional[str] = None
@@ -287,6 +288,7 @@ class PWAConfigUpdate(BaseModel):
     
     # Images
     logo_url: Optional[str] = None
+    icon_url: Optional[str] = None
     icon_192_url: Optional[str] = None
     icon_512_url: Optional[str] = None
     favicon_url: Optional[str] = None
@@ -380,6 +382,7 @@ class PWAConfigResponse(BaseModel):
     
     # Images
     logo_url: Optional[str] = None
+    icon_url: Optional[str] = None
     icon_192_url: Optional[str] = None
     icon_512_url: Optional[str] = None
     favicon_url: Optional[str] = None

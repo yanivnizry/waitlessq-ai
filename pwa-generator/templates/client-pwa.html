@@ -13,8 +13,13 @@
     <link rel="manifest" href="manifest.json">
     
     <!-- Icons -->
+    {% if pwa_config.icon_url %}
+    <link rel="icon" href="{{ pwa_config.icon_url }}">
+    <link rel="apple-touch-icon" href="{{ pwa_config.icon_url }}">
+    {% else %}
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📱</text></svg>">
     <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📱</text></svg>">
+    {% endif %}
     
     <!-- Styles -->
     <link rel="stylesheet" href="client-styles.css?v={{ cache_version|default('1') }}">

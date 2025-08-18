@@ -16,7 +16,9 @@ import {
   ExternalLink,
   Copy,
   Check,
-  CheckCircle
+  CheckCircle,
+  Upload,
+  ImageIcon
 } from 'lucide-react'
 
 import { Button } from '../ui/button'
@@ -35,6 +37,7 @@ interface PWAConfig {
   background_color: string
   accent_color: string
   logo_url?: string
+  icon_url?: string
   icon_192_url?: string
   icon_512_url?: string
   start_url: string
@@ -91,6 +94,7 @@ export function Settings() {
     theme_color: '#6366f1',
     background_color: '#ffffff',
     accent_color: '#8b5cf6',
+    icon_url: '',
     start_url: '/',
     display: 'standalone',
     orientation: 'any',
@@ -401,6 +405,79 @@ export function Settings() {
                       placeholder="#8b5cf6"
                       className="flex-1 input-focus"
                     />
+                  </div>
+                </div>
+                
+                {/* Icon Upload Section */}
+                <div>
+                  <label className="text-sm font-medium mb-2 block">PWA Icon</label>
+                  <div className="flex items-center gap-4 p-4 border-2 border-dashed border-muted-foreground/25 rounded-lg">
+                    <div className="flex-shrink-0">
+                      {pwaConfig.icon_url ? (
+                        <div className="relative">
+                          <img 
+                            src={pwaConfig.icon_url} 
+                            alt="PWA Icon" 
+                            className="w-16 h-16 rounded-lg object-cover border shadow-sm"
+                          />
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            className="absolute -top-2 -right-2 h-6 w-6 rounded-full p-0"
+                            onClick={() => setPwaConfig({ ...pwaConfig, icon_url: '' })}
+                          >
+                            ×
+                          </Button>
+                        </div>
+                      ) : (
+                        <div className="w-16 h-16 bg-muted rounded-lg flex items-center justify-center border-2 border-dashed border-muted-foreground/25">
+                          <ImageIcon className="h-8 w-8 text-muted-foreground" />
+                        </div>
+                      )}
+                    </div>
+                    
+                    <div className="flex-1 space-y-2">
+                      <div className="flex gap-2">
+                        <Input
+                          type="file"
+                          accept="image/*"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) {
+                              // Create a preview URL for the uploaded file
+                              const url = URL.createObjectURL(file);
+                              setPwaConfig({ ...pwaConfig, icon_url: url });
+                              // TODO: In production, upload to server and get permanent URL
+                            }
+                          }}
+                          className="hidden"
+                          id="icon-upload"
+                        />
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => document.getElementById('icon-upload')?.click()}
+                          className="flex-1"
+                        >
+                          <Upload className="h-4 w-4 mr-2" />
+                          Upload Icon
+                        </Button>
+                      </div>
+                      
+                      <div className="space-y-1">
+                        <Input
+                          placeholder="Or paste icon URL"
+                          value={pwaConfig.icon_url || ''}
+                          onChange={(e) => setPwaConfig({ ...pwaConfig, icon_url: e.target.value })}
+                          className="text-sm"
+                        />
+                      </div>
+                      
+                      <p className="text-xs text-muted-foreground">
+                        Recommended: 512x512px PNG or JPG. Will be used for app icon and splash screen.
+                      </p>
+                    </div>
                   </div>
                 </div>
               </CardContent>

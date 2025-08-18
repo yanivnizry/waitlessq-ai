@@ -54,22 +54,51 @@ class PWAGenerator:
             "orientation": pwa_config.get("orientation", "portrait") if pwa_config else "portrait",
             "theme_color": pwa_config.get("theme_color", provider_data.get("primary_color", "#3B82F6")) if pwa_config else provider_data.get("primary_color", "#3B82F6"),
             "background_color": pwa_config.get("background_color", "#FFFFFF") if pwa_config else "#FFFFFF",
-            "icons": [
-                {
-                    "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><rect width='192' height='192' fill='%23" + (pwa_config.get("theme_color", provider_data.get("primary_color", "#3B82F6")) if pwa_config else provider_data.get("primary_color", "#3B82F6")).lstrip('#') + "' rx='24'/><text x='96' y='120' font-size='80' text-anchor='middle' fill='white'>📱</text></svg>",
-                    "sizes": "192x192",
-                    "type": "image/svg+xml"
-                },
-                {
-                    "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'><rect width='512' height='512' fill='%23" + (pwa_config.get("theme_color", provider_data.get("primary_color", "#3B82F6")) if pwa_config else provider_data.get("primary_color", "#3B82F6")).lstrip('#') + "' rx='64'/><text x='256' y='320' font-size='200' text-anchor='middle' fill='white'>📱</text></svg>",
-                    "sizes": "512x512",
-                    "type": "image/svg+xml"
-                }
-            ]
+            "icons": self._generate_icon_list(provider_data, pwa_config)
         }
         
         with open(pwa_path / "manifest.json", "w") as f:
             json.dump(manifest_data, f, indent=2)
+    
+    def _generate_icon_list(self, provider_data: Dict[str, Any], pwa_config: Optional[Dict[str, Any]] = None):
+        """Generate icon list for manifest"""
+        icons = []
+        
+        # Use custom icon if provided
+        if pwa_config and pwa_config.get("icon_url"):
+            icon_url = pwa_config["icon_url"]
+            icons.extend([
+                {
+                    "src": icon_url,
+                    "sizes": "192x192",
+                    "type": "image/png",
+                    "purpose": "any maskable"
+                },
+                {
+                    "src": icon_url,
+                    "sizes": "512x512",
+                    "type": "image/png",
+                    "purpose": "any maskable"
+                }
+            ])
+        
+        # Fallback to generated SVG icons
+        theme_color = (pwa_config.get("theme_color", provider_data.get("primary_color", "#3B82F6")) if pwa_config else provider_data.get("primary_color", "#3B82F6")).lstrip('#')
+        
+        icons.extend([
+            {
+                "src": f"data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><rect width='192' height='192' fill='%23{theme_color}' rx='24'/><text x='96' y='120' font-size='80' text-anchor='middle' fill='white'>📱</text></svg>",
+                "sizes": "192x192",
+                "type": "image/svg+xml"
+            },
+            {
+                "src": f"data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'><rect width='512' height='512' fill='%23{theme_color}' rx='64'/><text x='256' y='320' font-size='200' text-anchor='middle' fill='white'>📱</text></svg>",
+                "sizes": "512x512",
+                "type": "image/svg+xml"
+            }
+        ])
+        
+        return icons
     
     async def _generate_index_html(self, pwa_path: Path, provider_data: Dict[str, Any], pwa_config: Optional[Dict[str, Any]] = None):
         """Generate main HTML file"""

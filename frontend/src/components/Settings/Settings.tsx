@@ -169,32 +169,6 @@ export function Settings() {
     }
   })
 
-  // Save PWA config mutation
-  const savePWAConfigMutation = useMutation({
-    mutationFn: (configData: any) => api.pwa.saveConfig(configData),
-    onSuccess: () => {
-      toast.success('PWA configuration saved successfully!')
-      queryClient.invalidateQueries({ queryKey: ['pwa-config'] })
-    },
-    onError: (error: any) => {
-      console.error('PWA save error:', error)
-      let errorMessage = 'Failed to save PWA configuration'
-      
-      if (error.response?.data?.detail) {
-        const detail = error.response.data.detail
-        if (Array.isArray(detail)) {
-          errorMessage = detail.map((err: any) => 
-            typeof err === 'object' && err.msg ? err.msg : String(err)
-          ).join(', ')
-        } else if (typeof detail === 'string') {
-          errorMessage = detail
-        }
-      }
-      
-      toast.error(errorMessage)
-    }
-  })
-
   // Generate PWA mutation
   const generatePWAMutation = useMutation({
     mutationFn: () => api.pwa.generatePWA(),

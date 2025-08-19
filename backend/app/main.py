@@ -63,10 +63,10 @@ def is_allowed_origin(origin: str) -> bool:
     if origin in cors_origins:
         return True
     
-    # In development, allow org-*.localhost:8001 pattern
+    # In development, allow any subdomain.localhost:8001 pattern
     if settings.is_development:
         import re
-        subdomain_pattern = r'^http://org-\d+\.localhost:8001$'
+        subdomain_pattern = r'^http://[a-zA-Z0-9-]+\.localhost:8001$'
         if re.match(subdomain_pattern, origin):
             return True
     
@@ -76,7 +76,7 @@ def is_allowed_origin(origin: str) -> bool:
 if settings.is_development:
     app.add_middleware(
         CORSMiddleware,
-        allow_origin_regex=r"http://(localhost|127\.0\.0\.1):(3000|8001)|http://org-\d+\.localhost:8001",
+        allow_origin_regex=r"http://(localhost|127\.0\.0\.1):(3000|8001)|http://[a-zA-Z0-9-]+\.localhost:8001",
         allow_credentials=True,
         allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
         allow_headers=["*"],

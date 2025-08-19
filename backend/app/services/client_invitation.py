@@ -79,13 +79,25 @@ class ClientInvitationService:
                     provider_name = organization.name
             
             # Create invitation link using organization subdomain
-            org_subdomain = f"org-{client.organization_id}"
+            # Reuse organization query if not already fetched
+            if 'organization' not in locals() or organization is None:
+                organization = db.query(Organization).filter(
+                    Organization.id == client.organization_id
+                ).first()
+            
+            # Use organization subdomain, slug, or fallback to org-{id}
+            if organization and organization.subdomain:
+                org_subdomain = organization.subdomain
+            elif organization and organization.slug:
+                org_subdomain = organization.slug
+            else:
+                org_subdomain = f"org-{client.organization_id}"
             
             # For development: use localhost subdomain format
             if "localhost" in settings.BASE_URL:
                 invitation_link = f"http://{org_subdomain}.localhost:8001/?token={invitation_token}"
             else:
-                # For production: use proper subdomain format like https://org-1.app.waitlessq.com/?token=...
+                # For production: use proper subdomain format like https://clinic-name.app.waitlessq.com/?token=...
                 base_domain = settings.BASE_URL.replace('http://', '').replace('https://', '')
                 invitation_link = f"https://{org_subdomain}.app.{base_domain}/?token={invitation_token}"
             

@@ -246,21 +246,33 @@ async def generate_pwa(
     except Exception as e:
         # Fallback to mock data if PWA generator is not available
         org_id = current_user.organization_id
-        pwa_url = f"{settings.PWA_BASE_URL}/pwa/org-{org_id}"
+        # Get organization to determine subdomain
+        from app.models.organization import Organization
+        organization = db.query(Organization).filter(Organization.id == org_id).first()
+        
+        # Use organization subdomain, slug, or fallback to org-{id}
+        if organization and organization.subdomain:
+            org_subdomain = organization.subdomain
+        elif organization and organization.slug:
+            org_subdomain = organization.slug
+        else:
+            org_subdomain = f"org-{org_id}"
+            
+        pwa_url = f"{settings.PWA_BASE_URL}/pwa/{org_subdomain}"
         if "localhost" in settings.BASE_URL:
-            subdomain_url = f"http://org-{org_id}.localhost:8001"
+            subdomain_url = f"http://{org_subdomain}.localhost:8001"
         else:
             base_domain = settings.BASE_URL.replace('http://', '').replace('https://', '')
-            subdomain_url = f"https://org-{org_id}.app.{base_domain}"
+            subdomain_url = f"https://{org_subdomain}.app.{base_domain}"
         
         return {
             "organization_id": org_id,
-            "pwa_url": f"/pwa/org-{org_id}",
+            "pwa_url": f"/pwa/{org_subdomain}",
             "pwa_type": "client",
             "status": "generated",
             "full_url": pwa_url,
             "subdomain_url": subdomain_url,
-            "subdomain_preview": f"org-{org_id}.localhost:8001" if "localhost" in settings.BASE_URL else f"org-{org_id}.app.{settings.BASE_URL.replace('http://', '').replace('https://', '')}",
+            "subdomain_preview": f"{org_subdomain}.localhost:8001" if "localhost" in settings.BASE_URL else f"{org_subdomain}.app.{settings.BASE_URL.replace('http://', '').replace('https://', '')}",
             "success": True,
             "message": "PWA generated successfully (fallback)",
             "qr_code_url": f"{pwa_url}/qr-code",

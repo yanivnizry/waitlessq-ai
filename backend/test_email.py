@@ -156,7 +156,7 @@ class EmailTester:
                 client_name="Test Client",
                 client_email=test_email,
                 provider_name="Test Provider",
-                invitation_link=f"http://org-1.localhost:8001/?token=test123",
+                invitation_link=f"http://test-clinic.localhost:8001/?token=test123",
                 provider_logo_url=None
             )
             

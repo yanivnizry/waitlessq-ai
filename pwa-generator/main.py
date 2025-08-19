@@ -41,14 +41,14 @@ def extract_org_subdomain(request: Request) -> str:
     
     # Handle localhost development with port
     if "localhost:" in host:
-        # For localhost:8001, check for org subdomain pattern like org-1.localhost:8001
-        if host.startswith("org-"):
-            return host.split(".")[0]  # Extract "org-1" from "org-1.localhost:8001"
+        # For localhost:8001, extract any subdomain pattern like clinic-name.localhost:8001
+        if "." in host:
+            return host.split(".")[0]  # Extract "clinic-name" from "clinic-name.localhost:8001"
     else:
-        # For production domains like org-1.waitlessq.com
+        # For production domains like clinic-name.waitlessq.com
         parts = host.split(".")
-        if len(parts) >= 2 and parts[0].startswith("org-"):
-            return parts[0]  # Extract "org-1" from "org-1.waitlessq.com"
+        if len(parts) >= 2:
+            return parts[0]  # Extract subdomain from any pattern
     
     return None
 
@@ -61,7 +61,7 @@ async def serve_subdomain_pwa(request: Request):
         return {
             "message": "WaitLessQ PWA Generator", 
             "version": "1.0.0",
-            "note": "Use org-{id}.localhost:8001 or /pwa/org-{id} to access PWAs"
+            "note": "Use {subdomain}.localhost:8001 or /pwa/{subdomain} to access PWAs"
         }
     
     try:
@@ -122,7 +122,7 @@ async def generate_pwa(organization_id: int, pwa_type: str = "client"):
                 "id": organization_id,
                 "organization_id": organization_id,
                 "business_name": organization_data.get("name", "WaitLessQ"),
-                "pwa_subdomain": f"org-{organization_id}",
+                "pwa_subdomain": organization_data.get("subdomain") or organization_data.get("slug") or f"org-{organization_id}",
                 "primary_color": "#3B82F6",
                 "secondary_color": "#1F2937"
             }
@@ -130,8 +130,8 @@ async def generate_pwa(organization_id: int, pwa_type: str = "client"):
             # Generate PWA
             pwa_url = await pwa_generator.generate_pwa(provider_data, pwa_config, pwa_type)
             
-            # Generate subdomain URLs
-            org_subdomain = f"org-{organization_id}"
+            # Generate subdomain URLs using flexible subdomain
+            org_subdomain = organization_data.get("subdomain") or organization_data.get("slug") or f"org-{organization_id}"
             subdomain_url = f"http://{org_subdomain}.localhost:8001"
             
             # Get PWA generator base URL

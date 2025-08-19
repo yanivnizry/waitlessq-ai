@@ -42,13 +42,13 @@ app.add_middleware(SecurityMiddleware)
 # Add rate limiting middleware
 app.add_middleware(RateLimitMiddleware)
 
-# CORS middleware - Environment-aware configuration
+# CORS middleware - Environment-aware configuration with dynamic subdomain support
 cors_origins = settings.CORS_ORIGINS
 if settings.is_development and not cors_origins:
     # Default development origins - ONLY for development
     cors_origins = [
         "http://localhost:3000",
-        "http://127.0.0.1:3000",
+        "http://127.0.0.1:3000", 
         "http://localhost:8001",  # PWA generator
         "http://127.0.0.1:8001",  # PWA generator
     ]
@@ -57,13 +57,38 @@ if settings.is_development and not cors_origins:
 if settings.is_production and not cors_origins:
     raise ValueError("CORS_ORIGINS must be configured in production environment")
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=cors_origins,
-    allow_credentials=True,
-    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allow_headers=["*"],
-)
+# Custom CORS middleware to handle dynamic subdomains in development
+def is_allowed_origin(origin: str) -> bool:
+    """Check if origin is allowed, including dynamic subdomain patterns"""
+    if origin in cors_origins:
+        return True
+    
+    # In development, allow org-*.localhost:8001 pattern
+    if settings.is_development:
+        import re
+        subdomain_pattern = r'^http://org-\d+\.localhost:8001$'
+        if re.match(subdomain_pattern, origin):
+            return True
+    
+    return False
+
+# Use allow_origin_regex for development to support subdomains
+if settings.is_development:
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origin_regex=r"http://(localhost|127\.0\.0\.1):(3000|8001)|http://org-\d+\.localhost:8001",
+        allow_credentials=True,
+        allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+        allow_headers=["*"],
+    )
+else:
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=cors_origins,
+        allow_credentials=True,
+        allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+        allow_headers=["*"],
+    )
 
 # Include API routes
 app.include_router(api_router, prefix="/api/v1")

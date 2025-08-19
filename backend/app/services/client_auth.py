@@ -32,7 +32,7 @@ class ClientAuthService:
     
     def create_access_token(self, client_id: int, email: str) -> str:
         """Create access token for client"""
-        import jwt  # Lazy import to avoid module loading issues
+        import jwt as pyjwt  # Import PyJWT library
         
         expire = datetime.utcnow() + timedelta(minutes=self.access_token_expire_minutes)
         to_encode = {
@@ -41,14 +41,14 @@ class ClientAuthService:
             "type": "client",
             "exp": expire
         }
-        return jwt.encode(to_encode, self.secret_key, algorithm=self.algorithm)
+        return pyjwt.encode(to_encode, self.secret_key, algorithm=self.algorithm)
     
     def decode_access_token(self, token: str) -> Optional[dict]:
         """Decode and validate access token"""
-        import jwt  # Lazy import to avoid module loading issues
+        import jwt as pyjwt  # Import PyJWT library
         
         try:
-            payload = jwt.decode(token, self.secret_key, algorithms=[self.algorithm])
+            payload = pyjwt.decode(token, self.secret_key, algorithms=[self.algorithm])
             if payload.get("type") != "client":
                 return None
             return payload

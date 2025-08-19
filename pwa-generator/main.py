@@ -78,7 +78,7 @@ async def generate_pwa(organization_id: int, pwa_type: str = "client"):
     """Generate PWA for a specific organization"""
     try:
         # Fetch organization data from main API
-        backend_url = os.getenv("BACKEND_URL", "http://backend:8000")
+        backend_url = os.getenv("BACKEND_BASE_URL", os.getenv("BACKEND_URL", "http://backend:8000"))
         async with httpx.AsyncClient() as client:
             # Get organization data
             response = await client.get(f"{backend_url}/api/v1/organizations/{organization_id}")
@@ -154,7 +154,7 @@ async def generate_provider_pwa(provider_id: int, pwa_type: str = "basic"):
     """Generate PWA for a specific provider (legacy endpoint)"""
     try:
         # Fetch provider data from main API
-        backend_url = os.getenv("BACKEND_URL", "http://backend:8000")
+        backend_url = os.getenv("BACKEND_BASE_URL", os.getenv("BACKEND_URL", "http://backend:8000"))
         async with httpx.AsyncClient() as client:
             response = await client.get(f"{backend_url}/api/v1/providers/{provider_id}")
             if response.status_code != 200:

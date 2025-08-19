@@ -20,8 +20,9 @@ class ClientInvitationService:
     def __init__(self):
         # Invitation expires in 7 days by default
         self.invitation_expire_days = getattr(settings, 'CLIENT_INVITATION_EXPIRE_DAYS', 7)
-        # Base URL for the PWA - should be configured in environment
-        self.pwa_base_url = getattr(settings, 'PWA_BASE_URL', 'https://app.waitlessq.com')
+        # Base URLs from centralized configuration
+        self.pwa_base_url = settings.PWA_BASE_URL
+        self.backend_base_url = settings.BACKEND_BASE_URL
     
     def send_client_invitation(
         self, 
@@ -77,8 +78,16 @@ class ClientInvitationService:
                 if organization:
                     provider_name = organization.name
             
-            # Create invitation link
-            invitation_link = f"{self.pwa_base_url}/register?token={invitation_token}"
+            # Create invitation link using organization subdomain
+            org_subdomain = f"org-{client.organization_id}"
+            
+            # For development: use localhost subdomain format
+            if "localhost" in settings.BASE_URL:
+                invitation_link = f"http://{org_subdomain}.localhost:8001/?token={invitation_token}"
+            else:
+                # For production: use proper subdomain format like https://org-1.app.waitlessq.com/?token=...
+                base_domain = settings.BASE_URL.replace('http://', '').replace('https://', '')
+                invitation_link = f"https://{org_subdomain}.app.{base_domain}/?token={invitation_token}"
             
             # Send email
             email_sent = email_service.send_client_invitation(

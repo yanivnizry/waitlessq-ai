@@ -209,7 +209,7 @@ class PWAGenerator:
             "background_color": pwa_config.get("background_color", "#FFFFFF") if pwa_config else "#FFFFFF",
             "logo_url": (pwa_config.get("logo_url") or pwa_config.get("icon_url")) if pwa_config else None,
             "organization_id": provider_data.get("organization_id", 1),
-            "api_url": os.getenv("BACKEND_URL", "http://localhost:8000"),
+            "api_url": os.getenv("BACKEND_BASE_URL", os.getenv("BACKEND_URL", "http://localhost:8000")),
             "cache_version": cache_version,
             "features": {
                 "notifications": pwa_config.get("features", {}).get("notifications", True) if pwa_config else True,
@@ -272,7 +272,7 @@ class PWAGenerator:
         context = {
             "provider_id": provider_data.get("id"),
             "provider_name": provider_data.get("business_name"),
-            "api_url": os.getenv("BACKEND_URL", "http://localhost:8000"),
+            "api_url": os.getenv("BACKEND_BASE_URL", os.getenv("BACKEND_URL", "http://localhost:8000")),
             "enable_appointments": pwa_config.get("enable_appointments", True) if pwa_config else True,
             "enable_queue": pwa_config.get("enable_queue", True) if pwa_config else True,
             "enable_notifications": pwa_config.get("enable_notifications", True) if pwa_config else True,

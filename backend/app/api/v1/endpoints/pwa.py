@@ -9,6 +9,7 @@ from pathlib import Path
 import uuid
 
 from app.core.database import get_db
+from app.core.config import settings
 from app.services.auth import get_current_user
 from app.models.user import User
 from app.models.pwa_config import PWAConfig
@@ -217,7 +218,7 @@ async def generate_pwa(
     
     try:
         # Call PWA generator service
-        pwa_generator_url = os.getenv("PWA_GENERATOR_URL", "http://localhost:8001")
+        pwa_generator_url = settings.PWA_BASE_URL
         
         async with httpx.AsyncClient(timeout=30.0) as client:
             response = await client.post(
@@ -245,8 +246,12 @@ async def generate_pwa(
     except Exception as e:
         # Fallback to mock data if PWA generator is not available
         org_id = current_user.organization_id
-        pwa_url = f"http://localhost:8001/pwa/org-{org_id}"
-        subdomain_url = f"http://org-{org_id}.localhost:8001"
+        pwa_url = f"{settings.PWA_BASE_URL}/pwa/org-{org_id}"
+        if "localhost" in settings.BASE_URL:
+            subdomain_url = f"http://org-{org_id}.localhost:8001"
+        else:
+            base_domain = settings.BASE_URL.replace('http://', '').replace('https://', '')
+            subdomain_url = f"https://org-{org_id}.app.{base_domain}"
         
         return {
             "organization_id": org_id,
@@ -255,7 +260,7 @@ async def generate_pwa(
             "status": "generated",
             "full_url": pwa_url,
             "subdomain_url": subdomain_url,
-            "subdomain_preview": f"org-{org_id}.localhost:8001",
+            "subdomain_preview": f"org-{org_id}.localhost:8001" if "localhost" in settings.BASE_URL else f"org-{org_id}.app.{settings.BASE_URL.replace('http://', '').replace('https://', '')}",
             "success": True,
             "message": "PWA generated successfully (fallback)",
             "qr_code_url": f"{pwa_url}/qr-code",

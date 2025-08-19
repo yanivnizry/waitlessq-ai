@@ -182,7 +182,7 @@ main() {
     # Start PWA Generator
     print_status "Starting PWA Generator..."
     cd pwa-generator
-    BACKEND_URL=http://localhost:8000 python -m uvicorn main:app --reload --host 0.0.0.0 --port 8001 > ../logs/pwa-generator.log 2>&1 &
+    BACKEND_BASE_URL=http://localhost:8000 BACKEND_URL=http://localhost:8000 PWA_BASE_URL=http://localhost:8001 python -m uvicorn main:app --reload --host 0.0.0.0 --port 8001 > ../logs/pwa-generator.log 2>&1 &
     PWA_PID=$!
     cd ..
     

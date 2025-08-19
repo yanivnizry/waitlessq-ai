@@ -40,11 +40,20 @@ class Settings(BaseSettings):
     FROM_EMAIL: str = os.getenv("FROM_EMAIL", "")
     FROM_NAME: str = os.getenv("FROM_NAME", "WaitLessQ")
     
+    # Base URLs - Centralized URL configuration
+    BASE_URL: str = os.getenv("BASE_URL", "localhost:3000" if os.getenv("ENVIRONMENT", "development") == "development" else "waitlessq.com")
+    BACKEND_BASE_URL: str = os.getenv("BACKEND_BASE_URL", "http://localhost:8000")  # Backend always on port 8000
+    PWA_BASE_URL: str = os.getenv("PWA_BASE_URL", "http://localhost:8001")  # PWA generator on port 8001 in dev
+    
+    # In production, these would be:
+    # BASE_URL = "waitlessq.com" 
+    # BACKEND_BASE_URL = "https://api.waitlessq.com"
+    # PWA_BASE_URL = "https://app.waitlessq.com"
+    
     # Client System Configuration
     CLIENT_JWT_SECRET_KEY: str = os.getenv("CLIENT_JWT_SECRET_KEY", secrets.token_urlsafe(32))
     CLIENT_ACCESS_TOKEN_EXPIRE_MINUTES: int = int(os.getenv("CLIENT_ACCESS_TOKEN_EXPIRE_MINUTES", "10080"))  # 7 days
     CLIENT_INVITATION_EXPIRE_DAYS: int = int(os.getenv("CLIENT_INVITATION_EXPIRE_DAYS", "7"))
-    PWA_BASE_URL: str = os.getenv("PWA_BASE_URL", "https://app.waitlessq.com")
     
     # Scaling and Performance
     # Rate Limiting

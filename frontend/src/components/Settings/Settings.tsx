@@ -461,8 +461,8 @@ export function Settings() {
                                 // Upload file to server
                                 const uploadResult = await api.pwa.uploadIcon(file);
                                 
-                                // Update with permanent URL
-                                const permanentUrl = `http://localhost:8000${uploadResult.url}`;
+                                // Update with permanent URL (use relative URL to work with any backend)
+                                const permanentUrl = uploadResult.url.startsWith('http') ? uploadResult.url : `${window.location.protocol}//${window.location.hostname}:8000${uploadResult.url}`;
                                 setPwaConfig({ ...pwaConfig, icon_url: permanentUrl });
                                 
                                 // Clean up preview URL

@@ -2,8 +2,10 @@ import React, { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { motion } from 'framer-motion'
 import { Calendar, Clock, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react'
+import { useRTL } from '../../hooks/useRTL'
 import { Button } from './button'
 import { Card, CardContent, CardHeader, CardTitle } from './card'
+import { cn } from '../../lib/utils'
 import { servicesAPI } from '../../services/api'
 import { format, addDays, subDays, isToday, isTomorrow } from 'date-fns'
 
@@ -24,6 +26,7 @@ const TimeSlotPicker: React.FC<TimeSlotPickerProps> = ({
   onTimeSelect,
   className = ""
 }) => {
+  const { isRTL, getFlexDirection, getMargin } = useRTL()
   const [currentDate, setCurrentDate] = useState(selectedDate)
 
   // Fetch time slots for the current date
@@ -80,7 +83,7 @@ const TimeSlotPicker: React.FC<TimeSlotPickerProps> = ({
     <Card className={className}>
       <CardHeader className="pb-4">
         <CardTitle className="flex items-center justify-between">
-          <div className="flex items-center space-x-2">
+          <div className={cn(getFlexDirection("flex items-center gap-2"))}>
             <Calendar className="h-5 w-5" />
             <span>Available Times</span>
           </div>

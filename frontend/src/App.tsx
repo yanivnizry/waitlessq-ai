@@ -5,6 +5,11 @@ import { ReactQueryDevtools } from "@tanstack/react-query-devtools"
 import { Toaster } from "sonner"
 import { ThemeProvider } from "next-themes"
 
+// Import i18n configuration
+import './i18n'
+import './styles/rtl.css'
+import './styles/tailwind-rtl.css'
+
 import { useAuthStore } from "./store/auth-store"
 import { useSessionManagement } from "./hooks/useSessionManagement"
 import { AuthProvider } from "./contexts/AuthContext"

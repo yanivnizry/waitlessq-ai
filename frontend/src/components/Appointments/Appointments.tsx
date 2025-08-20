@@ -1,6 +1,8 @@
 import React, { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { motion } from 'framer-motion'
+import { useTranslation } from 'react-i18next'
+import { useRTL } from '../../hooks/useRTL'
 import { 
   Calendar, 
   Clock, 
@@ -84,6 +86,8 @@ interface ClientFormData {
 }
 
 export function Appointments() {
+  const { t } = useTranslation()
+  const { isRTL, getFlexDirection, getMargin } = useRTL()
   const [showForm, setShowForm] = useState(false)
   const [editingAppointment, setEditingAppointment] = useState<Appointment | null>(null)
   const [searchTerm, setSearchTerm] = useState("")
@@ -442,10 +446,10 @@ export function Appointments() {
       <div className="flex items-center justify-between">
         <div className="space-y-2">
           <h1 className="text-4xl font-bold tracking-tight bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">
-            Appointments
+            {t('appointments.title')}
           </h1>
           <p className="text-lg text-muted-foreground">
-            Manage client appointments and scheduling with ease
+            {t('appointments.manageWithEase')}
           </p>
         </div>
         <Button
@@ -454,7 +458,7 @@ export function Appointments() {
           size="lg"
         >
           <UserPlus className="h-5 w-5 mr-2" />
-          New Appointment
+          {t('appointments.newAppointment')}
         </Button>
       </div>
 
@@ -464,7 +468,7 @@ export function Appointments() {
           <div className="relative flex-1">
             <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-muted-foreground" />
             <Input
-              placeholder="Search appointments by client name, service, or email..."
+              placeholder={t('appointments.searchPlaceholder')}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="pl-12 pr-4 py-3 text-base border-2 border-muted focus:border-primary/50 rounded-xl input-focus transition-all duration-300"
@@ -476,13 +480,13 @@ export function Appointments() {
               onChange={(e) => setStatusFilter(e.target.value)}
               className="w-full px-4 py-3 border-2 border-muted focus:border-primary/50 rounded-xl bg-background text-foreground transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-primary/20"
             >
-              <option value="all">All Status</option>
-              <option value="scheduled">Scheduled</option>
-              <option value="confirmed">Confirmed</option>
-              <option value="in_progress">In Progress</option>
-              <option value="completed">Completed</option>
-              <option value="cancelled">Cancelled</option>
-              <option value="no_show">No Show</option>
+              <option value="all">{t('appointments.allStatus')}</option>
+              <option value="scheduled">{t('appointments.scheduled')}</option>
+              <option value="confirmed">{t('appointments.confirmed')}</option>
+              <option value="in_progress">{t('appointments.inProgress')}</option>
+              <option value="completed">{t('appointments.completed')}</option>
+              <option value="cancelled">{t('appointments.cancelled')}</option>
+              <option value="no_show">{t('appointments.noShow')}</option>
             </select>
           </div>
         </div>
@@ -498,19 +502,19 @@ export function Appointments() {
           <Card>
             <CardHeader>
               <CardTitle>
-                {editingAppointment ? "Edit Appointment" : "Add New Appointment"}
+                {editingAppointment ? t('appointments.edit') : t('appointments.addNew')}
               </CardTitle>
               <CardDescription>
                 {editingAppointment
-                  ? "Update appointment details"
-                  : "Schedule a new appointment for a client"}
+                  ? t('appointments.updateDetails')
+                  : t('appointments.scheduleNew')}
               </CardDescription>
             </CardHeader>
             <CardContent>
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="text-sm font-medium">Provider *</label>
+                    <label className="text-sm font-medium">{t('formLabels.provider')}</label>
                     <select
                       value={formData.provider_id}
                       onChange={(e) =>
@@ -519,7 +523,7 @@ export function Appointments() {
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                       required
                     >
-                      <option value={0}>Select a provider</option>
+                      <option value={0}>{t('formLabels.selectProvider')}</option>
                       {providers?.map((provider: Provider) => (
                         <option key={provider.id} value={provider.id}>
                           {provider.business_name}
@@ -528,7 +532,7 @@ export function Appointments() {
                     </select>
                   </div>
                   <div>
-                    <label className="text-sm font-medium">Client *</label>
+                    <label className="text-sm font-medium">{t('formLabels.client')}</label>
                     <div className="relative">
                       <select
                         value={formData.client_id || ''}
@@ -536,7 +540,7 @@ export function Appointments() {
                         className="w-full h-10 px-3 py-2 text-sm bg-background border border-input rounded-md ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 appearance-none pr-8"
                         required
                       >
-                        <option value="">Select a client...</option>
+                        <option value="">{t('formLabels.selectClient')}</option>
                         {clients.map((client: any) => (
                           <option key={client.id} value={client.id}>
                             {client.name} {client.email ? `(${client.email})` : ''}
@@ -547,9 +551,9 @@ export function Appointments() {
                     </div>
                     {formData.client_id && (
                       <div className="mt-2 text-xs text-gray-600 space-y-1">
-                        <p><strong>Name:</strong> {formData.client_name}</p>
-                        {formData.client_email && <p><strong>Email:</strong> {formData.client_email}</p>}
-                        {formData.client_phone && <p><strong>Phone:</strong> {formData.client_phone}</p>}
+                        <p><strong>{t('clients.name')}:</strong> {formData.client_name}</p>
+                        {formData.client_email && <p><strong>{t('clients.email')}:</strong> {formData.client_email}</p>}
+                        {formData.client_phone && <p><strong>{t('clients.phone')}:</strong> {formData.client_phone}</p>}
                       </div>
                     )}
                     
@@ -561,12 +565,12 @@ export function Appointments() {
                         size="sm"
                         onClick={() => setShowClientModal(true)}
                       >
-                        + Add New Client
+                        + {t('clients.add')}
                       </Button>
                     </div>
                   </div>
                   <div>
-                    <label className="text-sm font-medium">Service *</label>
+                    <label className="text-sm font-medium">{t('formLabels.service')}</label>
                     <div className="relative">
                       <select
                         value={formData.service_id || ''}
@@ -574,7 +578,7 @@ export function Appointments() {
                         className="w-full h-10 px-3 py-2 text-sm bg-background border border-input rounded-md ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 appearance-none pr-8"
                         required
                       >
-                        <option value="">Select a service...</option>
+                        <option value="">{t('formLabels.selectService')}</option>
                         {services.map((service: any) => (
                           <option key={service.id} value={service.id}>
                             {service.name} - ${service.price} ({service.duration}min)
@@ -590,21 +594,21 @@ export function Appointments() {
                     )}
                   </div>
                   <div>
-                    <label className="text-sm font-medium">Duration (minutes) *</label>
+                    <label className="text-sm font-medium">{t('formLabels.duration')}</label>
                     <Input
                       type="number"
                       value={formData.duration}
                       onChange={(e) =>
                         setFormData({ ...formData, duration: parseInt(e.target.value) })
                       }
-                      placeholder="30"
+                      placeholder={t('placeholders.appDuration')}
                       min={15}
                       max={480}
                       required
                     />
                   </div>
                   <div className="md:col-span-2">
-                    <label className="text-sm font-medium">Scheduled Date & Time *</label>
+                    <label className="text-sm font-medium">{t('formLabels.scheduledDateTime')}</label>
                     <div className="space-y-3">
                       <Input
                         type="date"
@@ -712,7 +716,7 @@ export function Appointments() {
       {isLoading && (
         <div className="text-center py-8">
           <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-          <p className="text-sm text-muted-foreground mt-2">Loading appointments...</p>
+          <p className="text-sm text-muted-foreground mt-2">{t('appointments.loading')}</p>
         </div>
       )}
 
@@ -724,16 +728,16 @@ export function Appointments() {
               <div className="p-4 rounded-full bg-destructive/10 text-destructive w-fit mx-auto mb-4">
                 <X className="h-10 w-10" />
               </div>
-              <h3 className="text-xl font-semibold mb-2 text-destructive">Failed to load appointments</h3>
+              <h3 className="text-xl font-semibold mb-2 text-destructive">{t('appointments.loadError')}</h3>
               <p className="text-muted-foreground mb-6">
-                There was an error loading your appointments. Please try refreshing the page.
+                {t('appointments.loadErrorDesc')}
               </p>
               <Button
                 onClick={() => window.location.reload()}
                 variant="outline"
                 className="border-destructive/20 text-destructive hover:bg-destructive/10"
               >
-                Try Again
+                {t('appointments.tryAgain')}
               </Button>
             </div>
           </CardContent>
@@ -748,9 +752,9 @@ export function Appointments() {
               <div className="p-4 rounded-full bg-primary/10 text-primary w-fit mx-auto mb-6">
                 <Calendar className="h-12 w-12" />
               </div>
-              <h3 className="text-2xl font-semibold mb-3 text-foreground">No appointments yet</h3>
+              <h3 className="text-2xl font-semibold mb-3 text-foreground">{t('appointments.noAppointments')}</h3>
               <p className="text-muted-foreground mb-8 text-lg max-w-md mx-auto">
-                Start building your schedule by creating your first appointment.
+                {t('appointments.startBuilding')}
               </p>
               <Button
                 onClick={() => setShowForm(true)}
@@ -758,7 +762,7 @@ export function Appointments() {
                 className="shadow-lg hover:shadow-xl transition-all duration-300 bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary"
               >
                 <UserPlus className="h-5 w-5 mr-2" />
-                Schedule First Appointment
+                {t('appointments.scheduleFirst')}
               </Button>
             </div>
           </CardContent>
@@ -1036,7 +1040,7 @@ export function Appointments() {
                   />
                 </div>
 
-                <div className="flex items-center space-x-2">
+                <div className="flex items-center gap-2">
                   <input
                     type="checkbox"
                     id="marketing_consent"

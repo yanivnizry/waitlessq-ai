@@ -1,6 +1,8 @@
 import React, { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { motion } from 'framer-motion'
+import { useTranslation } from 'react-i18next'
+import { useRTL } from '../../hooks/useRTL'
 import { 
   Briefcase,
   UserPlus, 
@@ -16,6 +18,7 @@ import {
 import { Button } from '../ui/button'
 import { Input } from '../ui/input'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card'
+import { cn } from '../../lib/utils'
 import { servicesAPI, providersAPI } from '../../services/api'
 import { toast } from 'sonner'
 
@@ -58,18 +61,24 @@ interface ServiceFormData {
   buffer_time_after: number
 }
 
-const SERVICE_CATEGORIES = [
-  'Consultation',
-  'Treatment',
-  'Therapy',
-  'Maintenance',
-  'Emergency',
-  'Follow-up',
-  'Assessment',
-  'Other'
-]
+// SERVICE_CATEGORIES will be created dynamically with translations
 
 const Services: React.FC = () => {
+  const { t } = useTranslation()
+  const { isRTL, getFlexDirection, getMargin } = useRTL()
+  
+  // Create SERVICE_CATEGORIES dynamically with translations
+  const SERVICE_CATEGORIES = [
+    t('services.categories.consultation'),
+    t('services.categories.treatment'),
+    t('services.categories.therapy'),
+    t('services.categories.maintenance'),
+    t('services.categories.emergency'),
+    t('services.categories.followUp'),
+    t('services.categories.assessment'),
+    t('services.categories.other')
+  ]
+  
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedProvider, setSelectedProvider] = useState<number | null>(null)
   const [selectedCategory, setSelectedCategory] = useState<string>('all')
@@ -302,7 +311,7 @@ const Services: React.FC = () => {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-96">
-        <div className="text-lg">Loading services...</div>
+        <div className="text-lg">{t('services.loading')}</div>
       </div>
     )
   }
@@ -311,12 +320,12 @@ const Services: React.FC = () => {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-4">
+        <div className={cn(getFlexDirection("flex items-center gap-4"))}>
           <Briefcase className="h-8 w-8 text-blue-600" />
-          <h1 className="text-3xl font-bold text-gray-900">Services</h1>
+          <h1 className="text-3xl font-bold text-gray-900">{t('services.title')}</h1>
         </div>
         
-        <div className="flex space-x-2">
+        <div className="flex gap-2">
           <Button 
             variant="outline" 
             size="sm"
@@ -332,11 +341,11 @@ const Services: React.FC = () => {
               })
             }}
           >
-            Debug & Refresh
+            {t('services.debugRefresh')}
           </Button>
-          <Button onClick={() => setShowForm(true)}>
-            <UserPlus className="h-4 w-4 mr-2" />
-            Add Service
+          <Button onClick={() => setShowForm(true)} className="gap-2">
+            <UserPlus className="h-4 w-4" />
+            {t('services.add')}
           </Button>
         </div>
       </div>
@@ -344,16 +353,24 @@ const Services: React.FC = () => {
       {/* Filters */}
       <Card>
         <CardContent className="p-4">
-          <div className="flex flex-col md:flex-row gap-4">
+          <div className={cn(getFlexDirection("flex flex-col md:flex-row gap-4"))}>
             <div className="flex-1">
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                <Search 
+                  className="absolute top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" 
+                  style={{ 
+                    [isRTL ? 'right' : 'left']: '12px',
+                    top: '50%',
+                    transform: 'translateY(-50%)'
+                  }} 
+                />
                 <Input
                   type="text"
-                  placeholder="Search services..."
+                  placeholder={t('services.searchPlaceholder')}
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
+                  className={cn(isRTL ? "pr-9" : "pl-10")}
+                  dir={isRTL ? "rtl" : "ltr"}
                 />
               </div>
             </div>
@@ -363,7 +380,7 @@ const Services: React.FC = () => {
               onChange={(e) => setSelectedProvider(e.target.value ? parseInt(e.target.value) : null)}
               className="px-3 py-2 border border-gray-300 rounded-md text-sm"
             >
-              <option value="">All Providers</option>
+              <option value="">{t('services.allProviders')}</option>
               {providers?.map((provider: Provider) => (
                 <option key={provider.id} value={provider.id}>
                   {provider.business_name}
@@ -376,7 +393,7 @@ const Services: React.FC = () => {
               onChange={(e) => setSelectedCategory(e.target.value)}
               className="px-3 py-2 border border-gray-300 rounded-md text-sm"
             >
-              <option value="all">All Categories</option>
+              <option value="all">{t('services.allCategories')}</option>
               {SERVICE_CATEGORIES.map((category) => (
                 <option key={category} value={category}>
                   {category}
@@ -384,14 +401,14 @@ const Services: React.FC = () => {
               ))}
             </select>
 
-            <label className="flex items-center space-x-2 text-sm">
+            <label className="flex items-center gap-2 text-sm">
               <input
                 type="checkbox"
                 checked={showActiveOnly}
                 onChange={(e) => setShowActiveOnly(e.target.checked)}
                 className="rounded border-gray-300"
               />
-              <span>Active only</span>
+              <span>{t('services.activeOnly')}</span>
             </label>
           </div>
         </CardContent>
@@ -416,7 +433,7 @@ const Services: React.FC = () => {
                         {service.provider?.business_name}
                       </CardDescription>
                     </div>
-                    <div className="flex items-center space-x-1">
+                    <div className="flex items-center gap-1">
                       {service.is_active ? (
                         <CheckCircle className="h-4 w-4 text-green-500" />
                       ) : (
@@ -434,17 +451,17 @@ const Services: React.FC = () => {
                   )}
 
                   <div className="grid grid-cols-2 gap-4 text-sm">
-                    <div className="flex items-center space-x-2">
+                    <div className="flex items-center gap-2">
                       <Clock className="h-4 w-4 text-gray-400" />
                       <span>{formatDuration(service.duration)}</span>
                     </div>
-                    <div className="flex items-center space-x-2">
+                    <div className="flex items-center gap-2">
                       <DollarSign className="h-4 w-4 text-gray-400" />
                       <span>{formatPrice(service.price)}</span>
                     </div>
                   </div>
 
-                  <div className="flex items-center space-x-2">
+                  <div className="flex items-center gap-2">
                     <Tag className="h-4 w-4 text-gray-400" />
                     <span className="text-sm bg-gray-100 px-2 py-1 rounded-full">
                       {service.category}
@@ -457,7 +474,7 @@ const Services: React.FC = () => {
                     </div>
                   )}
 
-                  <div className="flex justify-end space-x-2 pt-2">
+                  <div className="flex justify-end gap-2 pt-2">
                     <Button
                       variant="outline"
                       size="sm"
@@ -481,7 +498,7 @@ const Services: React.FC = () => {
         ) : (
           <div className="col-span-full text-center py-12">
             <Briefcase className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">No services found</h3>
+                          <h3 className="text-lg font-medium text-gray-900 mb-2">{t('services.noServicesFound')}</h3>
             <p className="text-gray-600 mb-4">
               {searchTerm || selectedProvider || selectedCategory !== 'all'
                 ? 'Try adjusting your filters'
@@ -489,8 +506,8 @@ const Services: React.FC = () => {
               }
             </p>
             {!searchTerm && !selectedProvider && selectedCategory === 'all' && (
-              <Button onClick={() => setShowForm(true)}>
-                <UserPlus className="h-4 w-4 mr-2" />
+              <Button onClick={() => setShowForm(true)} className="gap-2">
+                <UserPlus className="h-4 w-4" />
                 Add Service
               </Button>
             )}
@@ -529,7 +546,7 @@ const Services: React.FC = () => {
                   }))}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md"
                 >
-                  <option value="">All Providers (Organization-wide)</option>
+                  <option value="">{t('services.allProvidersOrgWide')}</option>
                   {providers?.map((provider: Provider) => (
                     <option key={provider.id} value={provider.id}>
                       {provider.business_name}
@@ -542,13 +559,13 @@ const Services: React.FC = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Service Name *
+                    {t('services.name')} *
                   </label>
                   <Input
                     type="text"
                     value={formData.name}
                     onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-                    placeholder="e.g., General Consultation"
+                    placeholder={t('placeholders.serviceName')}
                     required
                   />
                 </div>
@@ -574,14 +591,14 @@ const Services: React.FC = () => {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Description
+                  {t('services.description')}
                 </label>
                 <textarea
                   value={formData.description}
                   onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
                   rows={3}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                  placeholder="Describe the service..."
+                  placeholder={t('placeholders.serviceDescription')}
                 />
               </div>
 
@@ -657,7 +674,7 @@ const Services: React.FC = () => {
                 </div>
               </div>
 
-              <div className="flex items-center space-x-2">
+              <div className="flex items-center gap-2">
                 <input
                   type="checkbox"
                   id="is_active"
@@ -670,7 +687,7 @@ const Services: React.FC = () => {
                 </label>
               </div>
 
-              <div className="flex justify-end space-x-3 pt-6">
+              <div className="flex justify-end gap-3 pt-6">
                 <Button type="button" variant="outline" onClick={resetForm}>
                   Cancel
                 </Button>
@@ -690,10 +707,10 @@ const Services: React.FC = () => {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card>
           <CardContent className="p-4">
-            <div className="flex items-center space-x-2">
+            <div className={cn(getFlexDirection("flex items-center gap-2"))}>
               <Briefcase className="h-5 w-5 text-blue-600" />
               <div>
-                <p className="text-sm text-gray-600">Total Services</p>
+                                  <p className="text-sm text-gray-600">{t('services.totalServices')}</p>
                 <p className="text-2xl font-bold">{services?.length || 0}</p>
               </div>
             </div>
@@ -702,10 +719,10 @@ const Services: React.FC = () => {
 
         <Card>
           <CardContent className="p-4">
-            <div className="flex items-center space-x-2">
+            <div className={cn(getFlexDirection("flex items-center gap-2"))}>
               <CheckCircle className="h-5 w-5 text-green-600" />
               <div>
-                <p className="text-sm text-gray-600">Active Services</p>
+                                  <p className="text-sm text-gray-600">{t('services.activeServices')}</p>
                 <p className="text-2xl font-bold">
                   {services?.filter((s: any) => s.is_active).length || 0}
                 </p>
@@ -716,10 +733,10 @@ const Services: React.FC = () => {
 
         <Card>
           <CardContent className="p-4">
-            <div className="flex items-center space-x-2">
+            <div className={cn(getFlexDirection("flex items-center gap-2"))}>
               <Tag className="h-5 w-5 text-purple-600" />
               <div>
-                <p className="text-sm text-gray-600">Categories</p>
+                                  <p className="text-sm text-gray-600">{t('services.categories')}</p>
                 <p className="text-2xl font-bold">
                   {new Set(services?.map((s: any) => s.category)).size || 0}
                 </p>
@@ -730,10 +747,10 @@ const Services: React.FC = () => {
 
         <Card>
           <CardContent className="p-4">
-            <div className="flex items-center space-x-2">
+            <div className={cn(getFlexDirection("flex items-center gap-2"))}>
               <DollarSign className="h-5 w-5 text-orange-600" />
               <div>
-                <p className="text-sm text-gray-600">Avg. Price</p>
+                                  <p className="text-sm text-gray-600">{t('services.avgPrice')}</p>
                 <p className="text-2xl font-bold">
                   {services?.length ? 
                     formatPrice(services.reduce((sum: number, s: any) => sum + s.price, 0) / services.length) : 

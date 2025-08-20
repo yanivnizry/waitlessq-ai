@@ -7,6 +7,7 @@ from app.models.appointment import Appointment
 from app.models.user import User
 from app.schemas.appointment import AppointmentCreate, AppointmentUpdate, AppointmentResponse
 from app.services.auth import get_current_user
+from app.services.client_auth import get_current_client
 
 router = APIRouter()
 
@@ -23,6 +24,25 @@ async def get_appointments(
     
     # Get appointments for those providers
     appointments = db.query(Appointment).filter(Appointment.provider_id.in_(provider_ids)).all()
+    return appointments
+
+# Client PWA endpoints
+@router.get("/client", response_model=List[AppointmentResponse])
+async def get_client_appointments(
+    db: Session = Depends(get_db),
+    current_client: "Client" = Depends(get_current_client)
+):
+    """Get appointments for a client (used by client PWA) - filtered by client's organization"""
+    from app.models.client import Client
+    from app.models.provider import Provider
+    
+    # Get appointments for the current authenticated client
+    # But also ensure they belong to providers in the same organization
+    appointments = db.query(Appointment).join(Provider).filter(
+        Appointment.client_id == current_client.id,
+        Provider.organization_id == current_client.organization_id
+    ).order_by(Appointment.scheduled_at.desc()).all()
+    
     return appointments
 
 @router.get("/{appointment_id}", response_model=AppointmentResponse)
@@ -102,14 +122,4 @@ async def delete_appointment(appointment_id: int, db: Session = Depends(get_db))
     
     db.delete(appointment)
     db.commit()
-    return {"message": "Appointment deleted successfully"}
-
-# Client PWA endpoints
-@router.get("/client", response_model=List[AppointmentResponse])
-async def get_client_appointments(db: Session = Depends(get_db)):
-    """Get appointments for a client (used by client PWA)"""
-    # This endpoint would normally use client authentication
-    # For now, we'll return all appointments as a placeholder
-    # TODO: Implement client authentication and filter by client
-    appointments = db.query(Appointment).all()
-    return appointments 
+    return {"message": "Appointment deleted successfully"} 

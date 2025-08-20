@@ -6,6 +6,7 @@ import { motion } from "framer-motion"
 import { Eye, EyeOff, Loader2 } from "lucide-react"
 import { toast } from "sonner"
 import { useNavigate } from "react-router-dom"
+import { useTranslation } from "react-i18next"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -14,31 +15,32 @@ import { useAuthStore } from "@/store/auth-store"
 import { api } from "@/lib/api-client"
 import { cn } from "@/lib/utils"
 
-const registerSchema = z.object({
-  full_name: z.string().min(2, "Full name must be at least 2 characters"),
-  email: z.string().email("Please enter a valid email address"),
-  password: z
-    .string()
-    .min(8, "Password must be at least 8 characters")
-    .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
-    .regex(/[a-z]/, "Password must contain at least one lowercase letter")
-    .regex(/[0-9]/, "Password must contain at least one number")
-    .regex(/[^A-Za-z0-9]/, "Password must contain at least one special character"),
-  confirmPassword: z.string(),
-  phone: z.string().optional(),
-}).refine((data) => data.password === data.confirmPassword, {
-  message: "Passwords don't match",
-  path: ["confirmPassword"],
-})
-
-type RegisterFormData = z.infer<typeof registerSchema>
-
 interface RegisterFormProps {
   onSuccess?: () => void
   className?: string
 }
 
 export function RegisterForm({ onSuccess, className }: RegisterFormProps) {
+  const { t } = useTranslation()
+  
+  const registerSchema = z.object({
+    full_name: z.string().min(2, t('auth.validation.minLength', { count: 2 })),
+    email: z.string().email(t('auth.validation.email')),
+    password: z
+      .string()
+      .min(8, t('auth.validation.minLength', { count: 8 }))
+      .regex(/[A-Z]/, t('auth.validation.passwordStrength'))
+      .regex(/[a-z]/, t('auth.validation.passwordStrength'))
+      .regex(/[0-9]/, t('auth.validation.passwordStrength'))
+      .regex(/[^A-Za-z0-9]/, t('auth.validation.passwordStrength')),
+    confirmPassword: z.string(),
+    phone: z.string().optional(),
+  }).refine((data) => data.password === data.confirmPassword, {
+    message: t('auth.validation.passwordMatch'),
+    path: ["confirmPassword"],
+  })
+  
+  type RegisterFormData = z.infer<typeof registerSchema>
   const navigate = useNavigate()
   const { login, setError, clearError } = useAuthStore()
   const [showPassword, setShowPassword] = React.useState(false)
@@ -97,7 +99,7 @@ export function RegisterForm({ onSuccess, className }: RegisterFormProps) {
       const userResponse = await api.auth.getCurrentUser()
       
       login(loginResponse.access_token, userResponse)
-      toast.success("Account created successfully!")
+      toast.success(t('auth.register.success'))
       
       onSuccess?.()
       navigate("/dashboard")
@@ -131,22 +133,22 @@ export function RegisterForm({ onSuccess, className }: RegisterFormProps) {
       <Card>
         <CardHeader className="space-y-1">
           <CardTitle className="text-2xl font-bold text-center">
-            Create your account
+            {t('auth.register.title')}
           </CardTitle>
           <CardDescription className="text-center">
-            Join WaitLessQ today
+            {t('auth.register.subtitle')}
           </CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <div className="space-y-2">
               <label htmlFor="full_name" className="text-sm font-medium">
-                Full Name
+                {t('auth.register.fullName')}
               </label>
               <Input
                 id="full_name"
                 type="text"
-                placeholder="Enter your full name"
+                placeholder={t('auth.register.fullName')}
                 {...register("full_name")}
                 className={cn(errors.full_name && "border-red-500")}
               />
@@ -157,12 +159,12 @@ export function RegisterForm({ onSuccess, className }: RegisterFormProps) {
 
             <div className="space-y-2">
               <label htmlFor="email" className="text-sm font-medium">
-                Email
+                {t('auth.register.email')}
               </label>
               <Input
                 id="email"
                 type="email"
-                placeholder="Enter your email"
+                placeholder={t('auth.register.email')}
                 {...register("email")}
                 className={cn(errors.email && "border-red-500")}
               />
@@ -173,25 +175,25 @@ export function RegisterForm({ onSuccess, className }: RegisterFormProps) {
 
             <div className="space-y-2">
               <label htmlFor="phone" className="text-sm font-medium">
-                Phone (Optional)
+                {t('auth.register.phone')} ({t('common.optional')})
               </label>
               <Input
                 id="phone"
                 type="tel"
-                placeholder="Enter your phone number"
+                placeholder={t('auth.register.phone')}
                 {...register("phone")}
               />
             </div>
 
             <div className="space-y-2">
               <label htmlFor="password" className="text-sm font-medium">
-                Password
+                {t('auth.register.password')}
               </label>
               <div className="relative">
                 <Input
                   id="password"
                   type={showPassword ? "text" : "password"}
-                  placeholder="Enter your password"
+                  placeholder={t('auth.register.password')}
                   {...register("password")}
                   className={cn(errors.password && "border-red-500")}
                 />
@@ -227,15 +229,15 @@ export function RegisterForm({ onSuccess, className }: RegisterFormProps) {
                     ))}
                   </div>
                   <div className="flex items-center gap-2 text-xs text-gray-600">
-                    <span>Password strength:</span>
+                    <span>{t('auth.validation.passwordStrength')}:</span>
                     <span className={cn(
                       passwordStrength.score <= 2 ? "text-red-500" : "",
                       passwordStrength.score === 3 ? "text-yellow-500" : "",
                       passwordStrength.score >= 4 ? "text-green-500" : ""
                     )}>
-                      {passwordStrength.score <= 2 ? "Weak" : ""}
-                      {passwordStrength.score === 3 ? "Fair" : ""}
-                      {passwordStrength.score >= 4 ? "Strong" : ""}
+                      {passwordStrength.score <= 2 ? t('auth.validation.weak') : ""}
+                      {passwordStrength.score === 3 ? t('auth.validation.fair') : ""}
+                      {passwordStrength.score >= 4 ? t('auth.validation.strong') : ""}
                     </span>
                   </div>
                 </div>
@@ -248,13 +250,13 @@ export function RegisterForm({ onSuccess, className }: RegisterFormProps) {
 
             <div className="space-y-2">
               <label htmlFor="confirmPassword" className="text-sm font-medium">
-                Confirm Password
+                {t('auth.register.confirmPassword')}
               </label>
               <div className="relative">
                 <Input
                   id="confirmPassword"
                   type={showConfirmPassword ? "text" : "password"}
-                  placeholder="Confirm your password"
+                  placeholder={t('auth.register.confirmPassword')}
                   {...register("confirmPassword")}
                   className={cn(errors.confirmPassword && "border-red-500")}
                 />
@@ -285,10 +287,10 @@ export function RegisterForm({ onSuccess, className }: RegisterFormProps) {
               {isLoading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Creating account...
+                  {t('auth.register.submit')}...
                 </>
               ) : (
-                "Create account"
+                t('auth.register.submit')
               )}
             </Button>
 
@@ -299,7 +301,7 @@ export function RegisterForm({ onSuccess, className }: RegisterFormProps) {
                 className="text-sm"
                 onClick={() => navigate("/login")}
               >
-                Already have an account? Sign in
+                {t('auth.register.hasAccount')} {t('auth.register.signIn')}
               </Button>
             </div>
           </form>

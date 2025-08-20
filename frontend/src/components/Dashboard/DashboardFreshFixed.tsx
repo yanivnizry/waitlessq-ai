@@ -1,6 +1,7 @@
 import React from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { motion } from 'framer-motion'
+import { useTranslation } from 'react-i18next'
 import { 
   ArrowUpRight, 
   ArrowDownRight,
@@ -10,6 +11,7 @@ import {
   TrendingUp,
   Activity
 } from 'lucide-react'
+import { useRTL } from '../../hooks/useRTL'
 import { useNavigate } from 'react-router-dom'
 
 import { Button } from '../ui/button'
@@ -34,6 +36,8 @@ interface StatCardProps {
 }
 
 function StatCard({ title, value, description, icon: Icon, trend, className }: StatCardProps) {
+  const { isRTL, getFlexDirection } = useRTL()
+  
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -41,7 +45,7 @@ function StatCard({ title, value, description, icon: Icon, trend, className }: S
       transition={{ duration: 0.3 }}
     >
       <Card className={cn("", className)}>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+        <CardHeader className={cn(getFlexDirection("flex flex-row items-center justify-between space-y-0 pb-2"))}>
           <CardTitle className="text-sm font-medium">{title}</CardTitle>
           <Icon className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
@@ -72,6 +76,8 @@ function StatCard({ title, value, description, icon: Icon, trend, className }: S
 export function DashboardFreshFixed() {
   console.log("🚀 FIXED DASHBOARD COMPONENT")
   
+  const { t } = useTranslation()
+  const { isRTL, getFlexDirection } = useRTL()
   const token = localStorage.getItem("token")
   const authStore = useAuthStore()
   const navigate = useNavigate()
@@ -137,24 +143,24 @@ export function DashboardFreshFixed() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className={cn(getFlexDirection("flex items-center justify-between"))}>
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
           <p className="text-muted-foreground">
-            Welcome back! Here's what's happening with your business today.
+            {t('dashboard.welcomeMessage')}
           </p>
         </div>
-        <div className="flex items-center space-x-3">
+        <div className="flex items-center gap-3">
           <QuickAddButton />
         </div>
         
         {stats && typeof stats === 'object' && 'organization_name' in stats && (
           <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
             <p className="text-sm text-blue-800">
-              <span className="font-medium">Organization:</span> {stats.organization_name || "Your Organization"}
+              <span className="font-medium">{t('dashboard.organization')}</span> {stats.organization_name || t('dashboard.yourOrganization')}
             </p>
             <p className="text-xs text-blue-600 mt-1">
-              All providers, appointments, and queues are scoped to your organization. Each user can only see and manage their own organization's data.
+              {t('dashboard.organizationScope')}
             </p>
           </div>
         )}
@@ -205,18 +211,18 @@ export function DashboardFreshFixed() {
       {/* Get Started section when no providers */}
       {stats && typeof stats === 'object' && 'total_providers' in stats && stats.total_providers === 0 && (
         <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-          <div className="flex items-center justify-between">
+          <div className={cn(getFlexDirection("flex items-center justify-between"))}>
             <div>
-              <h3 className="font-medium text-blue-900">Ready to get started?</h3>
+              <h3 className="font-medium text-blue-900">{t('dashboard.readyToStart')}</h3>
               <p className="text-sm text-blue-700 mt-1">
-                Add your first service provider to start managing appointments and queues.
+                {t('dashboard.addFirstProvider')}
               </p>
             </div>
             <Button
               onClick={() => navigate("/providers")}
               className="bg-blue-600 hover:bg-blue-700"
             >
-              Add Provider
+              {t('dashboard.addProvider')}
             </Button>
           </div>
         </div>
@@ -226,37 +232,37 @@ export function DashboardFreshFixed() {
       {(statsLoading || activityLoading || appointmentsLoading) && (
         <div className="text-center py-4">
           <div className="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-green-600"></div>
-          <p className="text-sm text-muted-foreground mt-2">🚀 Loading fresh data via API...</p>
+                        <p className="text-sm text-muted-foreground mt-2">{t('dashboard.loadingFreshData')}</p>
         </div>
       )}
 
       {/* Stats Grid */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <StatCard
-          title="Total Providers"
+          title={t('dashboard.totalProviders')}
           value={displayStats.total_providers}
-          description="Active service providers"
+          description={t('dashboard.totalProvidersDesc')}
           icon={Users}
           trend={{ value: 0, isPositive: true }}
         />
         <StatCard
-          title="Total Appointments"
+          title={t('dashboard.totalAppointments')}
           value={displayStats.total_appointments}
-          description="All time"
+          description={t('dashboard.totalAppointmentsDesc')}
           icon={Calendar}
           trend={{ value: 0, isPositive: true }}
         />
         <StatCard
-          title="Active Queues"
+          title={t('dashboard.activeQueues')}
           value={displayStats.active_queues}
-          description="Currently running"
+          description={t('dashboard.activeQueuesDesc')}
           icon={Clock}
           trend={{ value: 0, isPositive: true }}
         />
         <StatCard
-          title="Today's Appointments"
+          title={t('dashboard.todayAppointments')}
           value={displayStats.today_appointments}
-          description="Scheduled for today"
+          description={t('dashboard.todayAppointmentsDesc')}
           icon={TrendingUp}
           trend={{ value: 0, isPositive: true }}
         />
@@ -275,25 +281,25 @@ export function DashboardFreshFixed() {
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.3, delay: 0.1 }}
         >
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Activity className="h-5 w-5" />
-                Recent Activity
-              </CardTitle>
+                      <Card>
+              <CardHeader>
+                <CardTitle className={cn(getFlexDirection("flex items-center gap-2"))}>
+                  <Activity className="h-5 w-5" />
+                  {t('dashboard.recentActivity')}
+                </CardTitle>
               <CardDescription>
-                Latest updates from your business
+                {t('dashboard.recentActivityDesc')}
               </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {displayActivity.map((activity, index) => (
+                {displayActivity.map((activity: any, index: number) => (
                   <motion.div
                     key={activity.id}
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.2, delay: index * 0.1 }}
-                    className="flex items-start space-x-3"
+                    className="flex items-start gap-3"
                   >
                     <div className={cn(
                       "h-2 w-2 rounded-full mt-2",
@@ -318,19 +324,19 @@ export function DashboardFreshFixed() {
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.3, delay: 0.2 }}
         >
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Calendar className="h-5 w-5" />
-                Upcoming Appointments
-              </CardTitle>
+                      <Card>
+              <CardHeader>
+                <CardTitle className={cn(getFlexDirection("flex items-center gap-2"))}>
+                  <Calendar className="h-5 w-5" />
+                  {t('dashboard.upcomingAppointments')}
+                </CardTitle>
               <CardDescription>
-                Next scheduled appointments
+                {t('dashboard.upcomingAppointmentsDesc')}
               </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {displayAppointments.map((appointment, index) => (
+                {displayAppointments.map((appointment: any, index: number) => (
                   <motion.div
                     key={appointment.id}
                     initial={{ opacity: 0, y: 10 }}

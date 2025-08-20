@@ -15,38 +15,46 @@ import {
   Trophy
 } from "lucide-react"
 import { useNavigate, useLocation } from "react-router-dom"
+import { useTranslation } from "react-i18next"
 
 import { Button } from "../ui/button"
+import { useRTL } from "../../hooks/useRTL"
 import { useAuthStore } from "../../store/auth-store"
 import { cn } from "../../lib/utils"
 import FloatingActionButton from "../ui/FloatingActionButton"
+import LanguageSwitcher from "../LanguageSwitcher/LanguageSwitcher"
 
 interface LayoutProps {
   children: React.ReactNode
 }
 
 // Navigation updated at 2024-12-20 19:00 - ADDED QUICK APPOINTMENT - FORCE CACHE BREAK v6
-const navigation = [
-  { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-  { name: "Calendar", href: "/calendar", icon: Calendar },
-  { name: "Providers", href: "/providers", icon: Users },
-  { name: "Services", href: "/services", icon: Briefcase },
-  { name: "Clients", href: "/clients", icon: UserCheck },
-  { name: "Appointments", href: "/appointments", icon: CalendarClock },
-  { name: "Queues", href: "/queues", icon: Clock },
-  { name: "Availability", href: "/availability", icon: CalendarClock },
-  { name: "Achievements", href: "/achievements", icon: Trophy },
-  { name: "Settings", href: "/settings", icon: Settings },
-]
+// Navigation will be created dynamically with translations
 
-// Debug: Log navigation to console to verify it's loading
-console.log("🔥 NAVIGATION LOADED:", navigation.map(n => n.name))
+// // Debug: Log navigation to console to verify it's loading
+// console.log("🔥 NAVIGATION LOADED:", navigation.map(n => n.name))
 
 export function Layout({ children }: LayoutProps) {
   const navigate = useNavigate()
   const location = useLocation()
   const { user, logout } = useAuthStore()
   const [sidebarOpen, setSidebarOpen] = React.useState(false)
+  const { t } = useTranslation()
+  const { isRTL, getFlexDirection } = useRTL()
+
+  // Create navigation with translations
+  const navigation = [
+    { name: t('navigation.dashboard'), href: "/dashboard", icon: LayoutDashboard },
+    { name: t('navigation.calendar'), href: "/calendar", icon: Calendar },
+    { name: t('navigation.providers'), href: "/providers", icon: Users },
+    { name: t('navigation.services'), href: "/services", icon: Briefcase },
+    { name: t('navigation.clients'), href: "/clients", icon: UserCheck },
+    { name: t('navigation.appointments'), href: "/appointments", icon: CalendarClock },
+    { name: t('navigation.queues'), href: "/queues", icon: Clock },
+    { name: t('navigation.availability'), href: "/availability", icon: CalendarClock },
+    { name: t('navigation.achievements'), href: "/achievements", icon: Trophy },
+    { name: t('navigation.settings'), href: "/settings", icon: Settings },
+  ]
 
   const handleLogout = () => {
     logout()
@@ -62,17 +70,20 @@ export function Layout({ children }: LayoutProps) {
       )}>
         <div className="fixed inset-0 bg-black/20" onClick={() => setSidebarOpen(false)} />
         <motion.div
-          initial={{ x: "-100%" }}
+          initial={{ x: isRTL ? "100%" : "-100%" }}
           animate={{ x: 0 }}
-          exit={{ x: "-100%" }}
+          exit={{ x: isRTL ? "100%" : "-100%" }}
           transition={{ type: "spring", damping: 20 }}
-          className="fixed left-0 top-0 h-full w-64 bg-card border-r"
+          className={cn(
+            "fixed top-0 h-full w-64 bg-card",
+            isRTL ? "right-0 border-l" : "left-0 border-r"
+          )}
         >
           <div className="flex h-full flex-col">
             <div className="flex h-16 items-center justify-between px-4 border-b">
               <div className="flex items-center">
-                <h1 className="text-xl font-bold">WaitLessQ</h1>
-                <div className="ml-2 text-xs text-green-500">⚡ QUICK v1.0</div>
+                            <h1 className="text-xl font-bold">{t('layout.appName')}</h1>
+            <div className="ml-2 text-xs text-green-500">{t('layout.quickVersion')}</div>
               </div>
               <Button
                 variant="ghost"
@@ -90,7 +101,7 @@ export function Layout({ children }: LayoutProps) {
                     key={item.name}
                     variant={isActive ? "secondary" : "ghost"}
                     className={cn(
-                      "w-full justify-start",
+                      "w-full justify-start gap-3",
                       isActive && "bg-secondary"
                     )}
                     onClick={() => {
@@ -98,14 +109,14 @@ export function Layout({ children }: LayoutProps) {
                       setSidebarOpen(false)
                     }}
                   >
-                    <item.icon className="mr-3 h-5 w-5" />
+                    <item.icon className="h-5 w-5" />
                     {item.name}
                   </Button>
                 )
               })}
             </nav>
             <div className="border-t p-4">
-              <div className="flex items-center space-x-3 mb-4">
+              <div className="flex items-center gap-3 mb-4">
                 <div className="h-8 w-8 rounded-full bg-primary flex items-center justify-center">
                   <span className="text-sm font-medium text-primary-foreground">
                     {user?.full_name?.charAt(0) || "U"}
@@ -121,8 +132,8 @@ export function Layout({ children }: LayoutProps) {
                 className="w-full justify-start text-red-600 hover:text-red-700 hover:bg-red-50"
                 onClick={handleLogout}
               >
-                <LogOut className="mr-3 h-5 w-5" />
-                Sign out
+                                  <LogOut className={cn("h-5 w-5", isRTL ? "ml-3" : "mr-3")} />
+                  {t('common.logout')}
               </Button>
             </div>
           </div>
@@ -130,11 +141,17 @@ export function Layout({ children }: LayoutProps) {
       </div>
 
       {/* Desktop sidebar */}
-      <div className="hidden lg:fixed lg:inset-y-0 lg:z-50 lg:flex lg:w-64 lg:flex-col">
-        <div className="flex grow flex-col gap-y-5 overflow-y-auto bg-card border-r px-6">
+      <div className={cn(
+        "hidden lg:fixed lg:inset-y-0 lg:z-50 lg:flex lg:w-64 lg:flex-col",
+        isRTL ? "lg:right-0" : "lg:left-0"
+      )}>
+        <div className={cn(
+          "flex grow flex-col gap-y-5 overflow-y-auto bg-card px-6",
+          isRTL ? "border-l" : "border-r"
+        )}>
           <div className="flex h-16 shrink-0 items-center">
-            <h1 className="text-xl font-bold">WaitLessQ</h1>
-            <div className="ml-2 text-xs text-green-500">LIVE</div>
+            <h1 className="text-xl font-bold">{t('layout.appName')}</h1>
+            <div className="ml-2 text-xs text-green-500">{t('layout.live')}</div>
           </div>
           <nav className="flex flex-1 flex-col">
             <ul className="flex flex-1 flex-col gap-y-7">
@@ -147,12 +164,12 @@ export function Layout({ children }: LayoutProps) {
                         <Button
                           variant={isActive ? "secondary" : "ghost"}
                           className={cn(
-                            "w-full justify-start",
+                            "w-full justify-start gap-3",
                             isActive && "bg-secondary"
                           )}
                           onClick={() => navigate(item.href)}
                         >
-                          <item.icon className="mr-3 h-5 w-5" />
+                          <item.icon className="h-5 w-5" />
                           {item.name}
                         </Button>
                       </li>
@@ -161,7 +178,7 @@ export function Layout({ children }: LayoutProps) {
                 </ul>
               </li>
               <li className="mt-auto">
-                <div className="flex items-center space-x-3 mb-4">
+                <div className="flex items-center gap-3 mb-4">
                   <div className="h-8 w-8 rounded-full bg-primary flex items-center justify-center">
                     <span className="text-sm font-medium text-primary-foreground">
                       {user?.full_name?.charAt(0) || "U"}
@@ -174,11 +191,11 @@ export function Layout({ children }: LayoutProps) {
                 </div>
                 <Button
                   variant="ghost"
-                  className="w-full justify-start text-red-600 hover:text-red-700 hover:bg-red-50"
+                  className="w-full justify-start gap-3 text-red-600 hover:text-red-700 hover:bg-red-50"
                   onClick={handleLogout}
                 >
-                  <LogOut className="mr-3 h-5 w-5" />
-                  Sign out
+                  <LogOut className="h-5 w-5" />
+                  {t('common.logout')}
                 </Button>
               </li>
             </ul>
@@ -187,7 +204,7 @@ export function Layout({ children }: LayoutProps) {
       </div>
 
       {/* Main content */}
-      <div className="lg:pl-64">
+      <div className={isRTL ? "lg:pr-64" : "lg:pl-64"}>
         {/* Mobile header */}
         <div className="sticky top-0 z-40 flex h-16 shrink-0 items-center gap-x-4 border-b bg-background px-4 shadow-sm sm:gap-x-6 sm:px-6 lg:hidden">
           <Button
@@ -199,7 +216,36 @@ export function Layout({ children }: LayoutProps) {
           </Button>
           <div className="flex flex-1 gap-x-4 self-stretch lg:gap-x-6">
             <div className="flex flex-1"></div>
+            <div className="flex items-center gap-x-4 lg:gap-x-6">
+              <LanguageSwitcher />
+              <Button
+                variant="ghost"
+                onClick={handleLogout}
+                className="text-sm font-medium"
+              >
+                {t('common.logout')}
+              </Button>
+            </div>
           </div>
+        </div>
+
+        {/* Desktop header */}
+        <div className="hidden lg:flex sticky top-0 z-40 h-16 shrink-0 items-center justify-end gap-x-4 border-b bg-background px-4 shadow-sm sm:gap-x-6 sm:px-6">
+                      <div className="flex items-center gap-x-4">
+              <LanguageSwitcher />
+              <div className="flex items-center gap-x-2">
+                <span className="text-sm font-medium text-muted-foreground">
+                  {user?.full_name || user?.email}
+                </span>
+                <Button
+                  variant="ghost"
+                  onClick={handleLogout}
+                  className="text-sm font-medium"
+                >
+                  {t('common.logout')}
+                </Button>
+              </div>
+            </div>
         </div>
 
         {/* Page content */}

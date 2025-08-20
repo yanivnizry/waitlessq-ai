@@ -17,17 +17,17 @@ class PWAGenerator:
             autoescape=True
         )
     
-    def get_pwa_path(self, provider_subdomain: str) -> Path:
-        """Get the path for a provider's PWA"""
-        return self.storage_path / provider_subdomain
+    def get_pwa_path(self, pwa_subdomain: str) -> Path:
+        """Get the path for a PWA"""
+        return self.storage_path / pwa_subdomain
     
     async def generate_pwa(self, provider_data: Dict[str, Any], pwa_config: Optional[Dict[str, Any]] = None, pwa_type: str = "basic") -> str:
-        """Generate PWA for a provider"""
-        provider_subdomain = provider_data.get("pwa_subdomain")
-        if not provider_subdomain:
-            raise ValueError("Provider must have a pwa_subdomain")
+        """Generate PWA for an organization"""
+        pwa_subdomain = provider_data.get("pwa_subdomain")
+        if not pwa_subdomain:
+            raise ValueError("Organization must have a pwa_subdomain")
         
-        pwa_path = self.get_pwa_path(provider_subdomain)
+        pwa_path = self.get_pwa_path(pwa_subdomain)
         
         # Create PWA directory
         pwa_path.mkdir(exist_ok=True)
@@ -40,7 +40,7 @@ class PWAGenerator:
         else:
             await self._generate_basic_pwa(pwa_path, provider_data, pwa_config)
         
-        return f"/pwa/{provider_subdomain}"
+        return f"/pwa/{pwa_subdomain}"
     
     async def _generate_manifest(self, pwa_path: Path, provider_data: Dict[str, Any], pwa_config: Optional[Dict[str, Any]] = None):
         """Generate PWA manifest.json"""
@@ -200,22 +200,82 @@ class PWAGenerator:
             import time
             cache_version = str(int(time.time()))
         
+        # Parse features and branding if they're JSON strings
+        features = {}
+        branding = {}
+        if pwa_config:
+            if isinstance(pwa_config.get("features"), str):
+                try:
+                    features = json.loads(pwa_config["features"])
+                except (json.JSONDecodeError, TypeError):
+                    features = {}
+            elif isinstance(pwa_config.get("features"), dict):
+                features = pwa_config["features"]
+            
+            if isinstance(pwa_config.get("branding"), str):
+                try:
+                    branding = json.loads(pwa_config["branding"])
+                except (json.JSONDecodeError, TypeError):
+                    branding = {}
+            elif isinstance(pwa_config.get("branding"), dict):
+                branding = pwa_config["branding"]
+        
         context = {
             "provider": provider_data,
             "pwa_config": pwa_config or {},
             "app_name": pwa_config.get("app_name", provider_data.get("business_name", "WaitLessQ")) if pwa_config else provider_data.get("business_name", "WaitLessQ"),
+            "app_short_name": pwa_config.get("app_short_name", "") if pwa_config else "",
+            "app_description": pwa_config.get("app_description", "") if pwa_config else "",
+            
+            # Colors
             "theme_color": pwa_config.get("theme_color", provider_data.get("primary_color", "#3B82F6")) if pwa_config else provider_data.get("primary_color", "#3B82F6"),
             "accent_color": pwa_config.get("accent_color", "#F59E0B") if pwa_config else "#F59E0B",
             "background_color": pwa_config.get("background_color", "#FFFFFF") if pwa_config else "#FFFFFF",
+            "primary_color": pwa_config.get("primary_color", provider_data.get("primary_color", "#3B82F6")) if pwa_config else provider_data.get("primary_color", "#3B82F6"),
+            "secondary_color": pwa_config.get("secondary_color", provider_data.get("secondary_color", "#1F2937")) if pwa_config else provider_data.get("secondary_color", "#1F2937"),
+            "success_color": pwa_config.get("success_color", "#10b981") if pwa_config else "#10b981",
+            "warning_color": pwa_config.get("warning_color", "#f59e0b") if pwa_config else "#f59e0b",
+            "error_color": pwa_config.get("error_color", "#ef4444") if pwa_config else "#ef4444",
+            
+            # Typography
+            "font_family": pwa_config.get("font_family", "Inter") if pwa_config else "Inter",
+            "font_size_base": pwa_config.get("font_size_base", 16) if pwa_config else 16,
+            "font_weight_normal": pwa_config.get("font_weight_normal", 400) if pwa_config else 400,
+            "font_weight_bold": pwa_config.get("font_weight_bold", 600) if pwa_config else 600,
+            
+            # Layout
+            "border_radius": pwa_config.get("border_radius", 12) if pwa_config else 12,
+            "card_shadow": pwa_config.get("card_shadow", "medium") if pwa_config else "medium",
+            "layout_style": pwa_config.get("layout_style", "modern") if pwa_config else "modern",
+            "navigation_style": pwa_config.get("navigation_style", "bottom") if pwa_config else "bottom",
+            
+            # Images
             "logo_url": (pwa_config.get("logo_url") or pwa_config.get("icon_url")) if pwa_config else None,
+            "icon_url": pwa_config.get("icon_url", "") if pwa_config else "",
+            "favicon_url": pwa_config.get("favicon_url", "") if pwa_config else "",
+            "splash_image": pwa_config.get("splash_image", "") if pwa_config else "",
+            "background_image": pwa_config.get("background_image", "") if pwa_config else "",
+            
+            # Content
+            "welcome_message": pwa_config.get("welcome_message", "Welcome to your appointment portal") if pwa_config else "Welcome to your appointment portal",
+            "welcome_subtitle": pwa_config.get("welcome_subtitle", "") if pwa_config else "",
+            "footer_text": pwa_config.get("footer_text", "") if pwa_config else "",
+            "contact_info": pwa_config.get("contact_info", "") if pwa_config else "",
+            "privacy_policy_url": pwa_config.get("privacy_policy_url", "") if pwa_config else "",
+            "terms_of_service_url": pwa_config.get("terms_of_service_url", "") if pwa_config else "",
+            
+            # Features
+            "features": features,
+            "branding": branding,
+            
+            # Show/hide elements
+            "show_logo": pwa_config.get("show_logo", True) if pwa_config else True,
+            "show_company_name": pwa_config.get("show_company_name", True) if pwa_config else True,
+            
+            # Technical
             "organization_id": provider_data.get("organization_id", 1),
             "api_url": os.getenv("BACKEND_BASE_URL", os.getenv("BACKEND_URL", "http://localhost:8000")),
             "cache_version": cache_version,
-            "features": {
-                "notifications": pwa_config.get("features", {}).get("notifications", True) if pwa_config else True,
-                "offline_mode": pwa_config.get("features", {}).get("offline_mode", True) if pwa_config else True,
-                "location_access": pwa_config.get("features", {}).get("location_access", False) if pwa_config else False,
-            }
         }
         
         html_content = template.render(**context)
@@ -227,10 +287,62 @@ class PWAGenerator:
         """Generate client PWA CSS"""
         template = self.jinja_env.get_template("client-styles.css")
         
+        # Parse features and branding if they're JSON strings
+        features = {}
+        branding = {}
+        if pwa_config:
+            if isinstance(pwa_config.get("features"), str):
+                try:
+                    features = json.loads(pwa_config["features"])
+                except (json.JSONDecodeError, TypeError):
+                    features = {}
+            elif isinstance(pwa_config.get("features"), dict):
+                features = pwa_config["features"]
+            
+            if isinstance(pwa_config.get("branding"), str):
+                try:
+                    branding = json.loads(pwa_config["branding"])
+                except (json.JSONDecodeError, TypeError):
+                    branding = {}
+            elif isinstance(pwa_config.get("branding"), dict):
+                branding = pwa_config["branding"]
+        
         context = {
+            # Colors
             "theme_color": pwa_config.get("theme_color", provider_data.get("primary_color", "#3B82F6")) if pwa_config else provider_data.get("primary_color", "#3B82F6"),
             "accent_color": pwa_config.get("accent_color", "#F59E0B") if pwa_config else "#F59E0B",
             "background_color": pwa_config.get("background_color", "#FFFFFF") if pwa_config else "#FFFFFF",
+            "primary_color": pwa_config.get("primary_color", provider_data.get("primary_color", "#3B82F6")) if pwa_config else provider_data.get("primary_color", "#3B82F6"),
+            "secondary_color": pwa_config.get("secondary_color", provider_data.get("secondary_color", "#1F2937")) if pwa_config else provider_data.get("secondary_color", "#1F2937"),
+            "success_color": pwa_config.get("success_color", "#10b981") if pwa_config else "#10b981",
+            "warning_color": pwa_config.get("warning_color", "#f59e0b") if pwa_config else "#f59e0b",
+            "error_color": pwa_config.get("error_color", "#ef4444") if pwa_config else "#ef4444",
+            
+            # Typography
+            "font_family": pwa_config.get("font_family", "Inter") if pwa_config else "Inter",
+            "font_size_base": pwa_config.get("font_size_base", 16) if pwa_config else 16,
+            "font_weight_normal": pwa_config.get("font_weight_normal", 400) if pwa_config else 400,
+            "font_weight_bold": pwa_config.get("font_weight_bold", 600) if pwa_config else 600,
+            
+            # Layout
+            "border_radius": pwa_config.get("border_radius", 12) if pwa_config else 12,
+            "card_shadow": pwa_config.get("card_shadow", "medium") if pwa_config else "medium",
+            "layout_style": pwa_config.get("layout_style", "modern") if pwa_config else "modern",
+            "navigation_style": pwa_config.get("navigation_style", "bottom") if pwa_config else "bottom",
+            
+            # Content
+            "welcome_message": pwa_config.get("welcome_message", "Welcome to your appointment portal") if pwa_config else "Welcome to your appointment portal",
+            "welcome_subtitle": pwa_config.get("welcome_subtitle", "") if pwa_config else "",
+            "footer_text": pwa_config.get("footer_text", "") if pwa_config else "",
+            "contact_info": pwa_config.get("contact_info", "") if pwa_config else "",
+            
+            # Features
+            "features": features,
+            "branding": branding,
+            
+            # Show/hide elements
+            "show_logo": pwa_config.get("show_logo", True) if pwa_config else True,
+            "show_company_name": pwa_config.get("show_company_name", True) if pwa_config else True,
         }
         
         css_content = template.render(**context)

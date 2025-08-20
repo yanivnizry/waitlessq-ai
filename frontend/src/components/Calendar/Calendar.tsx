@@ -3,6 +3,8 @@ import { useQuery } from '@tanstack/react-query'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Calendar as BigCalendar, momentLocalizer, View, Views } from 'react-big-calendar'
 import moment from 'moment'
+import { useTranslation } from 'react-i18next'
+import { useRTL } from '../../hooks/useRTL'
 import { 
   CalendarIcon, 
   ChevronLeft, 
@@ -21,12 +23,72 @@ import {
 } from 'lucide-react'
 import { Button } from '../ui/button'
 import { Card, CardContent } from '../ui/card'
+import { cn } from '../../lib/utils'
 import { api } from '../../lib/api-client'
 import QuickAppointmentForm from './QuickAppointmentForm'
 import 'react-big-calendar/lib/css/react-big-calendar.css'
+import '../../styles/calendar-rtl.css'
 
-// Setup the localizer for BigCalendar
+// Setup the localizer for BigCalendar with RTL support
 const localizer = momentLocalizer(moment)
+
+// Configure moment locales
+moment.locale('en', {
+  week: {
+    dow: 0, // Sunday is the first day of the week
+  },
+})
+
+moment.locale('he', {
+  week: {
+    dow: 0, // Sunday is the first day of the week
+  },
+  months: [
+    'ינואר', 'פברואר', 'מרץ', 'אפריל', 'מאי', 'יוני',
+    'יולי', 'אוגוסט', 'ספטמבר', 'אוקטובר', 'נובמבר', 'דצמבר'
+  ],
+  monthsShort: [
+    'ינו', 'פבר', 'מרץ', 'אפר', 'מאי', 'יוני',
+    'יולי', 'אוג', 'ספט', 'אוק', 'נוב', 'דצמ'
+  ],
+  weekdays: ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי', 'שבת'],
+  weekdaysShort: ['א', 'ב', 'ג', 'ד', 'ה', 'ו', 'ש'],
+  weekdaysMin: ['א', 'ב', 'ג', 'ד', 'ה', 'ו', 'ש'],
+  longDateFormat: {
+    LT: 'HH:mm',
+    LTS: 'HH:mm:ss',
+    L: 'DD/MM/YYYY',
+    LL: 'D בMMMM YYYY',
+    LLL: 'D בMMMM YYYY HH:mm',
+    LLLL: 'dddd, D בMMMM YYYY HH:mm'
+  },
+  calendar: {
+    sameDay: '[היום ב־]LT',
+    nextDay: '[מחר ב־]LT',
+    nextWeek: 'dddd [ב־]LT',
+    lastDay: '[אתמול ב־]LT',
+    lastWeek: 'dddd [שעבר ב־]LT',
+    sameElse: 'L'
+  },
+  relativeTime: {
+    future: 'בעוד %s',
+    past: 'לפני %s',
+    s: 'מספר שניות',
+    ss: '%d שניות',
+    m: 'דקה',
+    mm: '%d דקות',
+    h: 'שעה',
+    hh: '%d שעות',
+    d: 'יום',
+    dd: '%d ימים',
+    w: 'שבוע',
+    ww: '%d שבועות',
+    M: 'חודש',
+    MM: '%d חודשים',
+    y: 'שנה',
+    yy: '%d שנים'
+  }
+})
 
 // Types
 interface CalendarEvent {
@@ -82,6 +144,13 @@ interface Appointment {
 const Calendar: React.FC = () => {
   console.log("🗓️ Calendar component rendering...")
   
+  const { t, i18n } = useTranslation()
+  const { isRTL, getFlexDirection, getMargin } = useRTL()
+  
+  // Set moment locale based on current language
+  React.useEffect(() => {
+    moment.locale(i18n.language)
+  }, [i18n.language])
   const [date, setDate] = useState(new Date())
   const [view, setView] = useState<View>(Views.MONTH)
   const [selectedProvider, setSelectedProvider] = useState<number | null>(null)
@@ -89,6 +158,79 @@ const Calendar: React.FC = () => {
   const [showEventModal, setShowEventModal] = useState(false)
   const [showNewAppointmentModal, setShowNewAppointmentModal] = useState(false)
   const [selectedSlot, setSelectedSlot] = useState<{ start: Date; end: Date } | null>(null)
+
+  // Custom toolbar component with Hebrew support
+  const CustomToolbar = (toolbar: any) => {
+    const goToBack = () => {
+      toolbar.onNavigate('PREV')
+    }
+
+    const goToNext = () => {
+      toolbar.onNavigate('NEXT')
+    }
+
+    const goToCurrent = () => {
+      toolbar.onNavigate('TODAY')
+    }
+
+    const viewNames = {
+      month: t('calendar.thisMonth'),
+      week: t('calendar.thisWeek'),
+      day: t('calendar.today'),
+      agenda: t('calendar.timeSlots')
+    }
+
+    return (
+      <div className={cn("flex items-center justify-between mb-4", isRTL && "flex-row-reverse")}>
+        <div className={cn("flex items-center gap-2", isRTL && "flex-row-reverse")}>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={goToBack}
+            className="gap-2"
+          >
+            <ChevronLeft className="h-4 w-4" />
+            {t('common.previous')}
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={goToCurrent}
+          >
+            {t('calendar.today')}
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={goToNext}
+            className="gap-2"
+          >
+            {t('common.next')}
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+        </div>
+        
+        <div className={cn("flex items-center gap-2", isRTL && "flex-row-reverse")}>
+          <span className="text-lg font-semibold">
+            {toolbar.label}
+          </span>
+        </div>
+        
+        <div className={cn("flex items-center gap-2", isRTL && "flex-row-reverse")}>
+          {toolbar.views.map((view: string) => (
+            <Button
+              key={view}
+              variant={toolbar.view === view ? "default" : "outline"}
+              size="sm"
+              onClick={() => toolbar.onView(view)}
+            >
+              {viewNames[view as keyof typeof viewNames] || view}
+            </Button>
+          ))}
+        </div>
+      </div>
+    )
+  }
 
   // const queryClient = useQueryClient() // Will be used for mutations when needed
 
@@ -235,67 +377,14 @@ const Calendar: React.FC = () => {
     }
   }
 
-  // Custom toolbar component
-  const CustomToolbar = ({ date, view, onNavigate, onView }: any) => (
-    <div className="flex items-center justify-between mb-4 p-4 bg-white border border-gray-200 rounded-lg">
-      <div className="flex items-center space-x-4">
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => onNavigate('PREV')}
-        >
-          <ChevronLeft className="h-4 w-4" />
-        </Button>
-        
-        <h2 className="text-xl font-semibold min-w-64 text-center">
-          {moment(date).format('MMMM YYYY')}
-        </h2>
-        
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => onNavigate('NEXT')}
-        >
-          <ChevronRight className="h-4 w-4" />
-        </Button>
-        
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => onNavigate('TODAY')}
-        >
-          Today
-        </Button>
-      </div>
 
-      <div className="flex items-center space-x-2">
-        <div className="flex bg-gray-100 rounded p-1">
-          {[
-            { key: Views.MONTH, label: 'Month' },
-            { key: Views.WEEK, label: 'Week' },
-            { key: Views.DAY, label: 'Day' },
-            { key: Views.AGENDA, label: 'Agenda' }
-          ].map(({ key, label }) => (
-            <Button
-              key={key}
-              variant={view === key ? "default" : "ghost"}
-              size="sm"
-              onClick={() => onView(key)}
-            >
-              {label}
-            </Button>
-          ))}
-        </div>
-      </div>
-    </div>
-  )
 
   console.log("📊 Calendar data:", { providers, appointments, providersLoading, appointmentsLoading })
 
   if (providersLoading || appointmentsLoading) {
     return (
       <div className="flex items-center justify-center h-96">
-        <div className="text-lg">Loading calendar...</div>
+        <div className="text-lg">{t('calendar.loading')}</div>
       </div>
     )
   }
@@ -304,20 +393,21 @@ const Calendar: React.FC = () => {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-4">
+        <div className={cn(getFlexDirection("flex items-center gap-4"))}>
           <CalendarIcon className="h-8 w-8 text-blue-600" />
-          <h1 className="text-3xl font-bold text-gray-900">Calendar</h1>
+          <h1 className="text-3xl font-bold text-gray-900">{t('calendar.title')}</h1>
         </div>
         
-        <div className="flex items-center space-x-2">
+        <div className="flex items-center gap-2">
           <Button
             onClick={() => {
               setSelectedSlot({ start: new Date(), end: new Date(Date.now() + 30 * 60000) })
               setShowNewAppointmentModal(true)
             }}
+            className="gap-2"
           >
-            <UserPlus className="h-4 w-4 mr-2" />
-            New Appointment
+            <UserPlus className="h-4 w-4" />
+            {t('calendar.addAppointment')}
           </Button>
         </div>
       </div>
@@ -325,17 +415,17 @@ const Calendar: React.FC = () => {
       {/* Filters */}
       <Card>
         <CardContent className="p-4">
-          <div className="flex items-center space-x-4">
-            <div className="flex items-center space-x-2">
+          <div className={cn(getFlexDirection("flex items-center gap-4"))}>
+            <div className={cn(getFlexDirection("flex items-center gap-2"))}>
               <Filter className="h-4 w-4 text-gray-500" />
-              <span className="text-sm font-medium">Filter by Provider:</span>
+              <span className="text-sm font-medium">{t('calendar.filterByProvider')}:</span>
             </div>
             <select
               value={selectedProvider || ''}
               onChange={(e) => setSelectedProvider(e.target.value ? parseInt(e.target.value) : null)}
               className="px-3 py-2 border border-gray-300 rounded-md text-sm"
             >
-              <option value="">All Providers</option>
+              <option value="">{t('calendar.allProviders')}</option>
               {providers?.map((provider: Provider) => (
                 <option key={provider.id} value={provider.id}>
                   {provider.business_name}
@@ -343,26 +433,26 @@ const Calendar: React.FC = () => {
               ))}
             </select>
             
-            <div className="flex items-center space-x-4 ml-8">
-              <div className="flex items-center space-x-2">
+            <div className={cn("flex items-center gap-4", isRTL ? "mr-8" : "ml-8")}>
+              <div className={cn(getFlexDirection("flex items-center gap-2"))}>
                 <div className="w-3 h-3 bg-blue-500 rounded"></div>
-                <span className="text-xs">Scheduled</span>
+                <span className="text-xs">{t('calendar.legend.scheduled')}</span>
               </div>
-              <div className="flex items-center space-x-2">
+              <div className={cn(getFlexDirection("flex items-center gap-2"))}>
                 <div className="w-3 h-3 bg-green-500 rounded"></div>
-                <span className="text-xs">Confirmed</span>
+                <span className="text-xs">{t('calendar.legend.confirmed')}</span>
               </div>
-              <div className="flex items-center space-x-2">
+              <div className={cn(getFlexDirection("flex items-center gap-2"))}>
                 <div className="w-3 h-3 bg-gray-500 rounded"></div>
-                <span className="text-xs">Completed</span>
+                <span className="text-xs">{t('calendar.legend.completed')}</span>
               </div>
-              <div className="flex items-center space-x-2">
+              <div className={cn(getFlexDirection("flex items-center gap-2"))}>
                 <div className="w-3 h-3 bg-red-500 rounded"></div>
-                <span className="text-xs">Cancelled</span>
+                <span className="text-xs">{t('calendar.legend.cancelled')}</span>
               </div>
-              <div className="flex items-center space-x-2">
+              <div className={cn(getFlexDirection("flex items-center gap-2"))}>
                 <div className="w-3 h-3 bg-orange-500 rounded"></div>
-                <span className="text-xs">No Show</span>
+                <span className="text-xs">{t('calendar.legend.noShow')}</span>
               </div>
             </div>
           </div>
@@ -394,7 +484,8 @@ const Calendar: React.FC = () => {
               step={15}
               timeslots={4}
               popup
-              className="bg-white"
+              rtl={isRTL}
+              className={cn("bg-white", isRTL && "rtl")}
             />
           </div>
         </CardContent>
@@ -410,8 +501,8 @@ const Calendar: React.FC = () => {
               exit={{ opacity: 0, scale: 0.95 }}
               className="bg-white rounded-lg p-6 max-w-md w-full mx-4 max-h-[90vh] overflow-y-auto"
             >
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold">Appointment Details</h3>
+              <div className={cn(getFlexDirection("flex items-center justify-between mb-4"))}>
+                <h3 className="text-lg font-semibold">{t('calendar.appointmentDetails')}</h3>
                 <Button
                   variant="ghost"
                   size="sm"
@@ -432,26 +523,26 @@ const Calendar: React.FC = () => {
                 </div>
 
                 {selectedEvent.resource?.provider && (
-                  <div className="flex items-center space-x-2">
+                  <div className={cn(getFlexDirection("flex items-center gap-2"))}>
                     <User className="h-4 w-4 text-gray-400" />
-                    <span className="text-sm">Provider: {selectedEvent.resource.provider.business_name}</span>
+                    <span className="text-sm">{t('calendar.serviceInfo')}: {selectedEvent.resource.provider.business_name}</span>
                   </div>
                 )}
 
                 {selectedEvent.resource?.client && (
                   <div className="space-y-2">
-                    <div className="flex items-center space-x-2">
+                    <div className={cn(getFlexDirection("flex items-center gap-2"))}>
                       <User className="h-4 w-4 text-gray-400" />
-                      <span className="text-sm">Client: {selectedEvent.resource.client.name}</span>
+                      <span className="text-sm">{t('calendar.clientInfo')}: {selectedEvent.resource.client.name}</span>
                     </div>
                     {selectedEvent.resource.client.phone && (
-                      <div className="flex items-center space-x-2">
+                      <div className={cn(getFlexDirection("flex items-center gap-2"))}>
                         <Phone className="h-4 w-4 text-gray-400" />
                         <span className="text-sm">{selectedEvent.resource.client.phone}</span>
                       </div>
                     )}
                     {selectedEvent.resource.client.email && (
-                      <div className="flex items-center space-x-2">
+                      <div className={cn(getFlexDirection("flex items-center gap-2"))}>
                         <Mail className="h-4 w-4 text-gray-400" />
                         <span className="text-sm">{selectedEvent.resource.client.email}</span>
                       </div>
@@ -504,8 +595,8 @@ const Calendar: React.FC = () => {
                     setShowEventModal(false)
                   }}
                 >
-                  <Edit className="h-4 w-4 mr-2" />
-                  Edit
+                                  <Edit className="h-4 w-4 mr-2" />
+                {t('calendar.edit')}
                 </Button>
               </div>
             </motion.div>

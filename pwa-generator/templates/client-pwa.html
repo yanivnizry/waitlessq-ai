@@ -94,6 +94,26 @@
                     </form>
                     <div class="auth-switch">
                         <p>Don't have an account? <a href="#" onclick="showRegistration()">Create one</a></p>
+                        <p><a href="#" onclick="showForgotPassword()">Forgot your password?</a></p>
+                    </div>
+                </div>
+
+                <!-- Forgot Password Form -->
+                <div id="forgotPasswordForm" class="auth-form" style="display: none;">
+                    <h2>Reset Password</h2>
+                    <p class="auth-description">Enter your email address and we'll send you a link to reset your password.</p>
+                    <form id="forgotPasswordFormElement">
+                        <div class="form-group">
+                            <label for="forgotPasswordEmail">Email</label>
+                            <input type="email" id="forgotPasswordEmail" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-paper-plane"></i>
+                            Send Reset Link
+                        </button>
+                    </form>
+                    <div class="auth-switch">
+                        <p><a href="#" onclick="showLoginForm()">Back to Sign In</a></p>
                     </div>
                 </div>
             </div>

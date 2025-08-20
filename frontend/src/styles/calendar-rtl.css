@@ -1,0 +1,86 @@
+/* RTL Calendar Styles */
+.rbc-calendar.rtl {
+  direction: rtl;
+  text-align: right;
+}
+
+.rbc-calendar.rtl .rbc-toolbar {
+  flex-direction: row-reverse;
+}
+
+.rbc-calendar.rtl .rbc-toolbar-label {
+  text-align: center;
+}
+
+.rbc-calendar.rtl .rbc-btn-group {
+  flex-direction: row-reverse;
+}
+
+.rbc-calendar.rtl .rbc-header {
+  text-align: center;
+}
+
+.rbc-calendar.rtl .rbc-month-view,
+.rbc-calendar.rtl .rbc-time-view {
+  direction: rtl;
+}
+
+.rbc-calendar.rtl .rbc-month-header {
+  direction: rtl;
+}
+
+.rbc-calendar.rtl .rbc-date-cell {
+  text-align: center;
+}
+
+.rbc-calendar.rtl .rbc-event {
+  text-align: right;
+}
+
+.rbc-calendar.rtl .rbc-time-header {
+  direction: rtl;
+}
+
+.rbc-calendar.rtl .rbc-time-header-content {
+  direction: rtl;
+}
+
+.rbc-calendar.rtl .rbc-time-slot {
+  text-align: center;
+}
+
+.rbc-calendar.rtl .rbc-agenda-view {
+  direction: rtl;
+}
+
+.rbc-calendar.rtl .rbc-agenda-date-cell {
+  text-align: center;
+}
+
+.rbc-calendar.rtl .rbc-agenda-time-cell {
+  text-align: center;
+}
+
+.rbc-calendar.rtl .rbc-agenda-event-cell {
+  text-align: right;
+}
+
+/* Hebrew text support */
+.rbc-calendar.rtl .rbc-toolbar-label,
+.rbc-calendar.rtl .rbc-header,
+.rbc-calendar.rtl .rbc-event,
+.rbc-calendar.rtl .rbc-agenda-event-cell {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  unicode-bidi: embed;
+}
+
+/* Ensure proper spacing in RTL */
+.rbc-calendar.rtl .rbc-toolbar button {
+  margin-left: 0;
+  margin-right: 4px;
+}
+
+.rbc-calendar.rtl .rbc-toolbar button:last-child {
+  margin-right: 0;
+  margin-left: 4px;
+}

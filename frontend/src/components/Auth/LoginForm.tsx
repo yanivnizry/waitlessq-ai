@@ -6,6 +6,7 @@ import { motion } from "framer-motion"
 import { Eye, EyeOff, Loader2 } from "lucide-react"
 import { toast } from "sonner"
 import { useNavigate } from "react-router-dom"
+import { useTranslation } from "react-i18next"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -13,13 +14,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { useAuthStore } from "@/store/auth-store"
 import { api } from "@/lib/api-client"
 import { cn } from "@/lib/utils"
-
-const loginSchema = z.object({
-  email: z.string().email("Please enter a valid email address"),
-  password: z.string().min(1, "Password is required"),
-})
-
-type LoginFormData = z.infer<typeof loginSchema>
+import LanguageSwitcher from "../LanguageSwitcher/LanguageSwitcher"
 
 interface LoginFormProps {
   onSuccess?: () => void
@@ -27,6 +22,14 @@ interface LoginFormProps {
 }
 
 export function LoginForm({ onSuccess, className }: LoginFormProps) {
+  const { t } = useTranslation()
+  
+  const loginSchema = z.object({
+    email: z.string().email(t('auth.validation.email')),
+    password: z.string().min(1, t('auth.validation.required')),
+  })
+  
+  type LoginFormData = z.infer<typeof loginSchema>
   const navigate = useNavigate()
   const { login, setError, clearError } = useAuthStore()
   const [showPassword, setShowPassword] = React.useState(false)
@@ -70,7 +73,7 @@ export function LoginForm({ onSuccess, className }: LoginFormProps) {
       
       console.log("🔐 Storing auth data in store...")
       login(response.access_token, userResponse)
-      toast.success("Successfully logged in!")
+      toast.success(t('auth.login.success'))
       
       console.log("🔐 Navigating to dashboard...")
       onSuccess?.()
@@ -108,13 +111,18 @@ export function LoginForm({ onSuccess, className }: LoginFormProps) {
       transition={{ duration: 0.5 }}
       className={cn("w-full max-w-md", className)}
     >
+      {/* Language Switcher */}
+      <div className="mb-6 flex justify-center">
+        <LanguageSwitcher />
+      </div>
+      
       <Card>
         <CardHeader className="space-y-1">
           <CardTitle className="text-2xl font-bold text-center">
-            Welcome back
+            {t('auth.login.title')}
           </CardTitle>
           <CardDescription className="text-center">
-            Enter your credentials to access your account
+            {t('auth.login.subtitle')}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -125,12 +133,12 @@ export function LoginForm({ onSuccess, className }: LoginFormProps) {
           }} className="space-y-4">
             <div className="space-y-2">
               <label htmlFor="email" className="text-sm font-medium">
-                Email
+                {t('auth.login.email')}
               </label>
               <Input
                 id="email"
                 type="email"
-                placeholder="Enter your email"
+                placeholder={t('auth.login.email')}
                 {...register("email")}
                 className={cn(errors.email && "border-red-500")}
               />
@@ -141,13 +149,13 @@ export function LoginForm({ onSuccess, className }: LoginFormProps) {
 
             <div className="space-y-2">
               <label htmlFor="password" className="text-sm font-medium">
-                Password
+                {t('auth.login.password')}
               </label>
               <div className="relative">
                 <Input
                   id="password"
                   type={showPassword ? "text" : "password"}
-                  placeholder="Enter your password"
+                  placeholder={t('auth.login.password')}
                   {...register("password")}
                   className={cn(errors.password && "border-red-500")}
                 />
@@ -178,10 +186,10 @@ export function LoginForm({ onSuccess, className }: LoginFormProps) {
               {isLoading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Signing in...
+                  {t('auth.login.submit')}...
                 </>
               ) : (
-                "Sign in"
+                t('auth.login.submit')
               )}
             </Button>
 
@@ -192,7 +200,7 @@ export function LoginForm({ onSuccess, className }: LoginFormProps) {
                 className="text-sm"
                 onClick={() => navigate("/register")}
               >
-                Don't have an account? Sign up
+                {t('auth.login.noAccount')} {t('auth.login.signUp')}
               </Button>
             </div>
           </form>

@@ -1,6 +1,8 @@
 import React, { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { motion, AnimatePresence } from 'framer-motion'
+import { useTranslation } from 'react-i18next'
+import { useRTL } from '../../hooks/useRTL'
 import {
   Plus,
   Clock,
@@ -10,18 +12,24 @@ import {
 } from 'lucide-react'
 import { Button } from '../ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card'
+import { cn } from '../../lib/utils'
 import { api } from '../../lib/api-client'
 import { toast } from 'sonner'
 import { useGamificationStore } from '../../store/gamification-store'
 
-// Ultra-minimal preset services
-const QUICK_SERVICES = [
-  { name: 'Appointment', duration: 30, price: 50 },
-  { name: 'Consultation', duration: 45, price: 75 },
-  { name: 'Follow-up', duration: 15, price: 25 }
-]
+// Ultra-minimal preset services - will be created dynamically with translations
 
 const QuickAddButton: React.FC = () => {
+  const { t } = useTranslation()
+  const { isRTL, getFlexDirection, getMargin } = useRTL()
+  
+  // Create QUICK_SERVICES dynamically with translations
+  const QUICK_SERVICES = [
+    { name: t('quickAdd.appointment'), duration: 30, price: 50 },
+    { name: t('quickAdd.consultation'), duration: 45, price: 75 },
+    { name: t('quickAdd.followUp'), duration: 15, price: 25 }
+  ]
+  
   const [showForm, setShowForm] = useState(false)
   const [selectedClient, setSelectedClient] = useState<any>(null)
   const [selectedService, setSelectedService] = useState(QUICK_SERVICES[0])
@@ -96,7 +104,7 @@ const QuickAddButton: React.FC = () => {
     e.preventDefault()
 
     if (!selectedClient) {
-      toast.error('Please select a client')
+      toast.error(t('quickAdd.selectClient'))
       return
     }
 
@@ -155,11 +163,11 @@ const QuickAddButton: React.FC = () => {
       {/* Quick Add Button */}
       <Button
         onClick={() => setShowForm(true)}
-        className="shadow-lg hover:shadow-xl transition-all duration-300 bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary"
+        className="shadow-lg hover:shadow-xl transition-all duration-300 bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary gap-2"
         size="lg"
       >
-        <Plus className="h-5 w-5 mr-2" />
-        Quick Add
+        <Plus className="h-5 w-5" />
+                        {t('quickAdd.title')}
       </Button>
 
       {/* Ultra-Simple Form Modal */}
@@ -181,9 +189,9 @@ const QuickAddButton: React.FC = () => {
               <Card className="w-full max-w-md card-hover bg-gradient-to-br from-card to-card/50 border-2">
                 <CardHeader className="pb-3">
                   <div className="flex items-center justify-between">
-                    <CardTitle className="flex items-center space-x-2">
+                    <CardTitle className={cn(getFlexDirection("flex items-center gap-2"))}>
                       <Zap className="h-5 w-5 text-primary" />
-                      <span>Quick Appointment</span>
+                      <span>{t('quickAdd.title')}</span>
                     </CardTitle>
                     <Button variant="ghost" size="sm" onClick={() => setShowForm(false)}>
                       <X className="h-4 w-4" />
@@ -196,7 +204,7 @@ const QuickAddButton: React.FC = () => {
                     {/* Client Selection */}
                     <div>
                       <label className="text-sm font-medium text-muted-foreground mb-2 block">
-                        Select Client *
+                        {t('quickAdd.selectClient')} *
                       </label>
                       <select
                         value={selectedClient?.id || ''}
@@ -204,7 +212,7 @@ const QuickAddButton: React.FC = () => {
                           const value = e.target.value
                           if (value === 'new') {
                             // Redirect to clients page or show create client form
-                            toast.info('Please go to Clients page to add a new client first')
+                            toast.info(t('quickAdd.goToClientsPage'))
                             return
                           }
                           const clientId = parseInt(value)
@@ -214,27 +222,27 @@ const QuickAddButton: React.FC = () => {
                         className="w-full px-4 py-3 text-lg border-2 border-muted focus:border-primary/50 rounded-xl bg-background text-foreground transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-primary/20"
                         required
                       >
-                        <option value="">Choose a client...</option>
+                        <option value="">{t('quickAdd.chooseClient')}</option>
                         {clientsQuery.data?.map((client: any) => (
                           <option key={client.id} value={client.id}>
                             {client.name} {client.phone ? `(${client.phone})` : ''}
                           </option>
                         ))}
                         <option value="new" className="font-medium text-primary">
-                          ➕ Add New Client
+                          ➕ {t('quickAdd.addNewClient')}
                         </option>
                       </select>
                       
                       {clientsQuery.isLoading && (
-                        <p className="text-xs text-muted-foreground mt-1">Loading clients...</p>
+                        <p className="text-xs text-muted-foreground mt-1">{t('quickAdd.loadingClients')}</p>
                       )}
                       
                       {clientsQuery.isError && (
-                        <p className="text-xs text-destructive mt-1">Failed to load clients</p>
+                        <p className="text-xs text-destructive mt-1">{t('quickAdd.failedToLoadClients')}</p>
                       )}
                       
                       {!clientsQuery.isLoading && !clientsQuery.isError && (!clientsQuery.data || clientsQuery.data.length === 0) && (
-                        <p className="text-xs text-muted-foreground mt-1">No clients found. Create some clients first.</p>
+                        <p className="text-xs text-muted-foreground mt-1">{t('quickAdd.noClientsFound')}</p>
                       )}
                       
                       {selectedClient && (
@@ -282,14 +290,14 @@ const QuickAddButton: React.FC = () => {
                     </div>
 
                     {/* Action Buttons */}
-                    <div className="flex space-x-2 pt-2">
+                    <div className="flex gap-2 pt-2">
                       <Button
                         type="button"
                         variant="outline"
                         onClick={() => setShowForm(false)}
                         className="flex-1"
                       >
-                        Cancel
+                        {t('common.cancel')}
                       </Button>
                       <Button
                         type="submit"
@@ -306,18 +314,18 @@ const QuickAddButton: React.FC = () => {
                         ) : (
                           <Save className="h-4 w-4 mr-2" />
                         )}
-                        {createAppointmentMutation.isPending ? 'Adding...' : 'Add'}
+                        {createAppointmentMutation.isPending ? t('quickAdd.adding') : t('quickAdd.add')}
                       </Button>
                     </div>
 
                     {/* Quick Preview */}
                     <div className="mt-3 p-2 bg-gray-50 rounded text-xs text-gray-600">
                       <div className="flex justify-between">
-                        <span>Service:</span>
+                        <span>{t('quickAdd.service')}:</span>
                         <span className="font-medium">{selectedService.name}</span>
                       </div>
                       <div className="flex justify-between">
-                        <span>Points to earn:</span>
+                        <span>{t('quickAdd.pointsToEarn')}:</span>
                         <span className="font-medium text-blue-600">
                           +{20 + 15 + Math.floor(selectedService.price / 10)}
                         </span>

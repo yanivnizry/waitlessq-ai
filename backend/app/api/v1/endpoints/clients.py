@@ -1,5 +1,5 @@
 from typing import List, Optional
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from sqlalchemy.orm import Session
 from sqlalchemy import and_, func, desc
 import math
@@ -22,7 +22,9 @@ from app.schemas.client import (
     ClientRegistration,
     ClientRegistrationResponse,
     ClientLoginRequest,
-    ClientLoginResponse
+    ClientLoginResponse,
+    ClientForgotPasswordRequest,
+    ClientForgotPasswordResponse
 )
 from app.services.client_invitation import client_invitation_service
 # client_auth_service imported lazily to avoid JWT module loading issues
@@ -502,6 +504,7 @@ def register_client(
 @router.post("/login", response_model=ClientLoginResponse)
 def login_client(
     login_data: ClientLoginRequest,
+    request: Request,
     db: Session = Depends(get_db)
 ):
     """
@@ -509,12 +512,17 @@ def login_client(
     """
     try:
         from app.services.client_auth import client_auth_service  # Lazy import
+        from app.services.client_auth import get_organization_from_request
+        
+        # Get organization context from request
+        organization_id = get_organization_from_request(request, db)
         
         # Authenticate client
         client = client_auth_service.authenticate_client(
             email=login_data.email,
             password=login_data.password,
-            db=db
+            db=db,
+            organization_id=organization_id
         )
         
         if not client:
@@ -523,7 +531,8 @@ def login_client(
         # Create access token
         access_token = client_auth_service.create_access_token(
             client_id=client.id,
-            email=client.email
+            email=client.email,
+            organization_id=client.organization_id
         )
         
         # Get providers this client has appointments with
@@ -543,6 +552,67 @@ def login_client(
     except Exception as e:
         print(f"❌ Error logging in client: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Failed to login: {str(e)}")
+
+
+@router.post("/forgot-password", response_model=ClientForgotPasswordResponse)
+def forgot_password(
+    forgot_data: ClientForgotPasswordRequest,
+    request: Request,
+    db: Session = Depends(get_db)
+):
+    """
+    Send password reset email to client
+    """
+    try:
+        from app.services.client_auth import get_organization_from_request
+        from app.services.email_service import email_service
+        
+        # Get organization context from request
+        organization_id = get_organization_from_request(request, db)
+        
+        # Find client by email in the organization
+        client = db.query(Client).filter(
+            and_(
+                Client.email == forgot_data.email,
+                Client.organization_id == organization_id,
+                Client.has_account == True
+            )
+        ).first()
+        
+        if not client:
+            # Don't reveal if email exists or not for security
+            return ClientForgotPasswordResponse(
+                success=True,
+                message="If an account with this email exists, a password reset link has been sent."
+            )
+        
+        # Generate password reset token
+        from app.services.client_auth import client_auth_service
+        reset_token = client_auth_service.create_password_reset_token(
+            client_id=client.id,
+            email=client.email,
+            organization_id=client.organization_id
+        )
+        
+        # Create reset URL
+        reset_url = f"{request.base_url}api/v1/clients/reset-password?token={reset_token}"
+        
+        # Send password reset email
+        email_service.send_password_reset_email(
+            to_email=client.email,
+            client_name=client.name,
+            reset_url=reset_url,
+            organization_name=client.organization.name if client.organization else "Your Organization"
+        )
+        
+        return ClientForgotPasswordResponse(
+            success=True,
+            message="Password reset link sent to your email."
+        )
+        
+    except Exception as e:
+        print(f"❌ Error in forgot password: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to process request: {str(e)}")
 
 
 @router.get("/validate-token/{token}")

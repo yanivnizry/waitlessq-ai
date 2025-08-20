@@ -1,6 +1,8 @@
 import React, { useState } from "react"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { motion } from "framer-motion"
+import { useTranslation } from "react-i18next"
+import { useRTL } from "../../hooks/useRTL"
 import { 
   UserPlus, 
   Users, 
@@ -34,6 +36,8 @@ interface ProviderFormData {
 }
 
 export function Providers() {
+  const { t } = useTranslation()
+  const { isRTL, getFlexDirection, getMargin } = useRTL()
   const [showForm, setShowForm] = useState(false)
   const [editingProvider, setEditingProvider] = useState<Provider | null>(null)
   const [formData, setFormData] = useState<ProviderFormData>({
@@ -125,9 +129,9 @@ export function Providers() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Providers</h1>
+          <h1 className="text-3xl font-bold tracking-tight">{t('providers.title')}</h1>
           <p className="text-muted-foreground">
-            Manage your service providers and their information.
+            {t('providers.manageProviders')}
           </p>
         </div>
         <Button
@@ -135,7 +139,7 @@ export function Providers() {
           className="bg-blue-600 hover:bg-blue-700"
         >
           <UserPlus className="h-4 w-4 mr-2" />
-          Add Provider
+          {t('providers.add')}
         </Button>
       </div>
 
@@ -149,17 +153,17 @@ export function Providers() {
           <Card>
             <CardHeader>
               <CardTitle>
-                {editingProvider ? "Edit Provider" : "Add New Provider"}
+                {editingProvider ? t('providers.edit') : t('providers.addNew')}
               </CardTitle>
               <CardDescription>
                 {editingProvider
-                  ? "Update provider information"
-                  : "Create a new service provider for your organization"}
+                  ? t('providers.updateInfo')
+                  : t('providers.createNew')}
               </CardDescription>
               {!editingProvider && (
                 <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
                   <p className="text-xs text-blue-800">
-                    <span className="font-medium">Multi-tenant:</span> This provider will be automatically assigned to your organization. 
+                    <span className="font-medium">{t('providers.multiTenant')}:</span> {t('providers.multiTenantDesc')} 
                     Only users in your organization can see and manage this provider's appointments and queues.
                   </p>
                 </div>
@@ -169,18 +173,18 @@ export function Providers() {
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="space-y-4">
                   <div>
-                    <label className="text-sm font-medium">Business Name *</label>
+                    <label className="text-sm font-medium">{t('providers.businessName')} *</label>
                     <Input
                       value={formData.business_name}
                       onChange={(e) =>
                         setFormData({ ...formData, business_name: e.target.value })
                       }
-                      placeholder="Enter business name (e.g., 'Dr. Smith Clinic', 'Hair Studio')"
+                      placeholder={t('providers.businessNamePlaceholder')}
                       required
                     />
                   </div>
                   <div>
-                    <label className="text-sm font-medium">Phone Number</label>
+                    <label className="text-sm font-medium">{t('providers.phoneNumber')}</label>
                     <Input
                       value={formData.phone}
                       onChange={(e) =>
@@ -189,7 +193,7 @@ export function Providers() {
                       placeholder="+1 (555) 123-4567"
                     />
                     <p className="text-xs text-muted-foreground mt-1">
-                      Optional - for client contact and appointment confirmations
+                      {t('providers.phoneOptional')}
                     </p>
                   </div>
                 </div>
@@ -203,17 +207,17 @@ export function Providers() {
                   >
                     {createProviderMutation.isPending ||
                     updateProviderMutation.isPending
-                      ? "Saving..."
+                      ? t('common.saving')
                       : editingProvider
-                      ? "Update Provider"
-                      : "Create Provider"}
+                      ? t('providers.updateProvider')
+                      : t('providers.createProvider')}
                   </Button>
                   <Button
                     type="button"
                     variant="outline"
                     onClick={resetForm}
                   >
-                    Cancel
+                    {t('common.cancel')}
                   </Button>
                 </div>
               </form>
@@ -226,7 +230,7 @@ export function Providers() {
       {isLoading && (
         <div className="text-center py-8">
           <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-          <p className="text-sm text-muted-foreground mt-2">Loading providers...</p>
+          <p className="text-sm text-muted-foreground mt-2">{t('providers.loading')}</p>
         </div>
       )}
 
@@ -235,7 +239,7 @@ export function Providers() {
         <Card>
           <CardContent className="py-8 text-center">
             <p className="text-red-600">
-              Failed to load providers. Please try again.
+              {t('providers.loadError')}
             </p>
           </CardContent>
         </Card>
@@ -246,16 +250,16 @@ export function Providers() {
         <Card>
           <CardContent className="py-12 text-center">
             <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-            <h3 className="text-lg font-medium mb-2">No providers yet</h3>
+            <h3 className="text-lg font-medium mb-2">{t('providers.noProviders')}</h3>
             <p className="text-muted-foreground mb-4">
-              Get started by adding your first service provider.
+              {t('providers.getStarted')}
             </p>
             <Button
               onClick={() => setShowForm(true)}
               className="bg-blue-600 hover:bg-blue-700"
             >
               <UserPlus className="h-4 w-4 mr-2" />
-              Add Your First Provider
+              {t('providers.addFirstProvider')}
             </Button>
           </CardContent>
         </Card>
@@ -264,7 +268,7 @@ export function Providers() {
       {/* Providers Grid */}
       {providers && providers.length > 0 && (
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {providers.map((provider, index) => (
+          {providers.map((provider: Provider, index: number) => (
             <motion.div
               key={provider.id}
               initial={{ opacity: 0, y: 20 }}
@@ -286,7 +290,7 @@ export function Providers() {
                           )}
                         />
                         <span className="text-sm text-muted-foreground">
-                          {provider.is_active ? "Active" : "Inactive"}
+                          {provider.is_active ? t('providers.active') : t('providers.inactive')}
                         </span>
                       </div>
                     </div>

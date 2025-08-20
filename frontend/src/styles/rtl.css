@@ -1,0 +1,323 @@
+/* RTL (Right-to-Left) Language Support */
+
+/* Base RTL styles */
+.rtl {
+  direction: rtl;
+}
+
+.ltr {
+  direction: ltr;
+}
+
+/* RTL-specific utility classes */
+.rtl .text-left {
+  text-align: right;
+}
+
+.rtl .text-right {
+  text-align: left;
+}
+
+.rtl .ml-auto {
+  margin-left: unset;
+  margin-right: auto;
+}
+
+.rtl .mr-auto {
+  margin-right: unset;
+  margin-left: auto;
+}
+
+/* RTL Flexbox adjustments */
+.rtl .flex-row-reverse {
+  flex-direction: row;
+}
+
+.rtl .flex-row {
+  flex-direction: row-reverse;
+}
+
+/* RTL Margin and Padding adjustments */
+.rtl .ml-1 { margin-left: unset; margin-right: 0.25rem; }
+.rtl .ml-2 { margin-left: unset; margin-right: 0.5rem; }
+.rtl .ml-3 { margin-left: unset; margin-right: 0.75rem; }
+.rtl .ml-4 { margin-left: unset; margin-right: 1rem; }
+.rtl .ml-5 { margin-left: unset; margin-right: 1.25rem; }
+.rtl .ml-6 { margin-left: unset; margin-right: 1.5rem; }
+.rtl .ml-8 { margin-left: unset; margin-right: 2rem; }
+
+.rtl .mr-1 { margin-right: unset; margin-left: 0.25rem; }
+.rtl .mr-2 { margin-right: unset; margin-left: 0.5rem; }
+.rtl .mr-3 { margin-right: unset; margin-left: 0.75rem; }
+.rtl .mr-4 { margin-right: unset; margin-left: 1rem; }
+.rtl .mr-5 { margin-right: unset; margin-left: 1.25rem; }
+.rtl .mr-6 { margin-right: unset; margin-left: 1.5rem; }
+.rtl .mr-8 { margin-right: unset; margin-left: 2rem; }
+
+.rtl .pl-1 { padding-left: unset; padding-right: 0.25rem; }
+.rtl .pl-2 { padding-left: unset; padding-right: 0.5rem; }
+.rtl .pl-3 { padding-left: unset; padding-right: 0.75rem; }
+.rtl .pl-4 { padding-left: unset; padding-right: 1rem; }
+.rtl .pl-5 { padding-left: unset; padding-right: 1.25rem; }
+.rtl .pl-6 { padding-left: unset; padding-right: 1.5rem; }
+.rtl .pl-8 { padding-left: unset; padding-right: 2rem; }
+
+.rtl .pr-1 { padding-right: unset; padding-left: 0.25rem; }
+.rtl .pr-2 { padding-right: unset; padding-left: 0.5rem; }
+.rtl .pr-3 { padding-right: unset; padding-left: 0.75rem; }
+.rtl .pr-4 { padding-right: unset; padding-left: 1rem; }
+.rtl .pr-5 { padding-right: unset; padding-left: 1.25rem; }
+.rtl .pr-6 { padding-right: unset; padding-left: 1.5rem; }
+.rtl .pr-8 { padding-right: unset; padding-left: 2rem; }
+
+/* RTL Border radius adjustments */
+.rtl .rounded-l { border-radius: 0 0.375rem 0.375rem 0; }
+.rtl .rounded-r { border-radius: 0.375rem 0 0 0.375rem; }
+.rtl .rounded-tl { border-radius: 0 0.375rem 0 0; }
+.rtl .rounded-tr { border-radius: 0.375rem 0 0 0; }
+.rtl .rounded-bl { border-radius: 0 0 0.375rem 0; }
+.rtl .rounded-br { border-radius: 0 0 0 0.375rem; }
+
+/* RTL Border adjustments */
+.rtl .border-l { border-left: unset; border-right: 1px solid; }
+.rtl .border-r { border-right: unset; border-left: 1px solid; }
+
+/* RTL Position adjustments */
+.rtl .left-0 { left: unset; right: 0; }
+.rtl .right-0 { right: unset; left: 0; }
+.rtl .left-1 { left: unset; right: 0.25rem; }
+.rtl .right-1 { right: unset; left: 0.25rem; }
+.rtl .left-2 { left: unset; right: 0.5rem; }
+.rtl .right-2 { right: unset; left: 0.5rem; }
+.rtl .left-3 { left: unset; right: 0.75rem; }
+.rtl .right-3 { right: unset; left: 0.75rem; }
+.rtl .left-4 { left: unset; right: 1rem; }
+.rtl .right-4 { right: unset; left: 1rem; }
+
+/* RTL Transform adjustments for icons */
+.rtl .rotate-180 {
+  transform: rotate(180deg);
+}
+
+.rtl .scale-x-[-1] {
+  transform: scaleX(-1);
+}
+
+/* RTL Navigation adjustments */
+.rtl .sidebar {
+  left: unset;
+  right: 0;
+}
+
+.rtl .sidebar-closed {
+  transform: translateX(100%);
+}
+
+.rtl .sidebar-open {
+  transform: translateX(0);
+}
+
+/* RTL Dropdown adjustments */
+.rtl .dropdown-menu {
+  left: unset;
+  right: 0;
+}
+
+.rtl .dropdown-menu-left {
+  left: 0;
+  right: unset;
+}
+
+.rtl .dropdown-menu-right {
+  left: unset;
+  right: 0;
+}
+
+/* RTL Form input adjustments */
+.rtl input[type="text"],
+.rtl input[type="email"],
+.rtl input[type="password"],
+.rtl input[type="search"],
+.rtl textarea {
+  text-align: right;
+}
+
+.rtl input[type="number"] {
+  text-align: left; /* Keep numbers left-aligned */
+}
+
+/* RTL Chevron and arrow icon adjustments */
+.rtl .chevron-right {
+  transform: rotate(180deg);
+}
+
+.rtl .chevron-left {
+  transform: rotate(180deg);
+}
+
+.rtl .arrow-right {
+  transform: rotate(180deg);
+}
+
+.rtl .arrow-left {
+  transform: rotate(180deg);
+}
+
+/* RTL Modal and dialog adjustments */
+.rtl .modal-content {
+  text-align: right;
+}
+
+.rtl .modal-header {
+  text-align: right;
+}
+
+/* RTL Table adjustments */
+.rtl table {
+  direction: rtl;
+}
+
+.rtl th,
+.rtl td {
+  text-align: right;
+}
+
+.rtl th:first-child,
+.rtl td:first-child {
+  text-align: right;
+}
+
+.rtl th:last-child,
+.rtl td:last-child {
+  text-align: right;
+}
+
+/* RTL Card adjustments */
+.rtl .card-header {
+  text-align: right;
+}
+
+.rtl .card-body {
+  text-align: right;
+}
+
+.rtl .card-footer {
+  text-align: right;
+}
+
+/* RTL Button group adjustments */
+.rtl .btn-group .btn:first-child {
+  border-top-right-radius: 0.375rem;
+  border-bottom-right-radius: 0.375rem;
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+}
+
+.rtl .btn-group .btn:last-child {
+  border-top-left-radius: 0.375rem;
+  border-bottom-left-radius: 0.375rem;
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
+/* RTL Toast/Notification adjustments */
+.rtl .toast {
+  text-align: right;
+}
+
+.rtl .toast-header {
+  text-align: right;
+}
+
+/* RTL Progress bar adjustments */
+.rtl .progress-bar {
+  direction: ltr; /* Keep progress bars left-to-right */
+}
+
+/* RTL Breadcrumb adjustments */
+.rtl .breadcrumb {
+  direction: rtl;
+}
+
+.rtl .breadcrumb-item + .breadcrumb-item::before {
+  content: "\\";
+}
+
+/* RTL Pagination adjustments */
+.rtl .pagination {
+  direction: rtl;
+}
+
+/* RTL Calendar adjustments */
+.rtl .calendar {
+  direction: rtl;
+}
+
+.rtl .calendar-header {
+  direction: rtl;
+}
+
+.rtl .calendar-body {
+  direction: rtl;
+}
+
+/* RTL specific animations */
+@keyframes slideInRight {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+@keyframes slideInLeft {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+.rtl .slide-in-right {
+  animation: slideInLeft 0.3s ease-out;
+}
+
+.rtl .slide-in-left {
+  animation: slideInRight 0.3s ease-out;
+}
+
+/* RTL Font adjustments for Arabic */
+.rtl[lang="ar"] {
+  font-family: 'Segoe UI', 'Tahoma', 'Arial', 'Helvetica Neue', sans-serif;
+}
+
+/* RTL Font adjustments for Hebrew */
+.rtl[lang="he"] {
+  font-family: 'Segoe UI', 'Tahoma', 'Arial', 'Helvetica Neue', sans-serif;
+}
+
+/* Ensure proper text rendering for RTL languages */
+.rtl {
+  text-rendering: optimizeLegibility;
+  -webkit-font-feature-settings: "liga", "kern";
+  font-feature-settings: "liga", "kern";
+}
+
+/* RTL specific utility classes */
+.rtl-hidden {
+  display: none;
+}
+
+.ltr .rtl-hidden {
+  display: unset;
+}
+
+.rtl .ltr-hidden {
+  display: none;
+}
+
+.ltr-hidden {
+  display: unset;
+}

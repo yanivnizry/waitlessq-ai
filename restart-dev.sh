@@ -111,6 +111,79 @@ wait_for_port_free() {
     return 1
 }
 
+# Function to clear caches
+clear_caches() {
+    print_status "🧹 Clearing caches..."
+    
+    # Clear frontend caches
+    if [ -d "frontend" ]; then
+        print_status "Clearing frontend caches..."
+        
+        # Clear node_modules cache (optional, uncomment if needed)
+        # cd frontend && npm cache clean --force && cd ..
+        
+        # Clear React build cache
+        if [ -d "frontend/build" ]; then
+            rm -rf frontend/build
+            print_success "Cleared React build cache"
+        fi
+        
+        # Clear React cache directory
+        if [ -d "frontend/.cache" ]; then
+            rm -rf frontend/.cache
+            print_success "Cleared React .cache directory"
+        fi
+        
+        # Clear any temporary files
+        find frontend -name "*.tmp" -delete 2>/dev/null || true
+        find frontend -name "*.log" -delete 2>/dev/null || true
+    fi
+    
+    # Clear backend caches
+    if [ -d "backend" ]; then
+        print_status "Clearing backend caches..."
+        
+        # Clear Python cache files
+        find backend -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
+        find backend -name "*.pyc" -delete 2>/dev/null || true
+        find backend -name "*.pyo" -delete 2>/dev/null || true
+        
+        # Clear any temporary files
+        find backend -name "*.tmp" -delete 2>/dev/null || true
+        find backend -name "*.log" -delete 2>/dev/null || true
+        
+        print_success "Cleared Python cache files"
+    fi
+    
+    # Clear PWA generator caches
+    if [ -d "pwa-generator" ]; then
+        print_status "Clearing PWA generator caches..."
+        
+        # Clear Python cache files
+        find pwa-generator -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
+        find pwa-generator -name "*.pyc" -delete 2>/dev/null || true
+        find pwa-generator -name "*.pyo" -delete 2>/dev/null || true
+        
+        # Clear any temporary files
+        find pwa-generator -name "*.tmp" -delete 2>/dev/null || true
+        find pwa-generator -name "*.log" -delete 2>/dev/null || true
+        
+        print_success "Cleared PWA generator cache files"
+    fi
+    
+    # Clear system-level caches (optional)
+    print_status "Clearing system caches..."
+    
+    # Clear browser cache files if they exist
+    if [ -d "logs" ]; then
+        # Keep only the last 10 log files to prevent disk space issues
+        find logs -name "*.log" -mtime +7 -delete 2>/dev/null || true
+        print_success "Cleaned old log files"
+    fi
+    
+    print_success "✅ All caches cleared successfully!"
+}
+
 # Function to check if a service is running
 check_service() {
     local port=$1
@@ -161,6 +234,9 @@ main() {
     wait_for_port_free 8001
     
     sleep 2
+    
+    # Step 1.5: Clear caches
+    clear_caches
     
     # Step 2: Start all services
     print_status "🚀 Starting all services..."

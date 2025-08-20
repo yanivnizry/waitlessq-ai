@@ -2,9 +2,12 @@ import React, { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Plus, Calendar, Users, Clock, X } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
+import { useRTL } from '../../hooks/useRTL'
+import { cn } from '../../lib/utils'
 import QuickAddButton from '../Dashboard/QuickAddButton'
 
 const FloatingActionButton: React.FC = () => {
+  const { isRTL, getFlexDirection } = useRTL()
   const [isOpen, setIsOpen] = useState(false)
   const navigate = useNavigate()
 
@@ -36,14 +39,14 @@ const FloatingActionButton: React.FC = () => {
   ]
 
   return (
-    <div className="fixed bottom-6 right-6 z-40">
+    <div className={cn("fixed bottom-6 z-40", isRTL ? "left-6" : "right-6")}>
       <AnimatePresence>
         {isOpen && (
           <motion.div
             initial={{ opacity: 0, scale: 0.8 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.8 }}
-            className="absolute bottom-16 right-0 space-y-3"
+            className={cn("absolute bottom-16 space-y-3", isRTL ? "left-0" : "right-0")}
           >
             {quickActions.map((action, index) => (
               <motion.div
@@ -52,7 +55,7 @@ const FloatingActionButton: React.FC = () => {
                 animate={{ opacity: 1, y: 0, x: 0 }}
                 exit={{ opacity: 0, y: 20, x: 20 }}
                 transition={{ delay: index * 0.1 }}
-                className="flex items-center space-x-3"
+                className="flex items-center gap-3"
               >
                 <div className="bg-white px-3 py-1 rounded-full shadow-lg text-sm font-medium text-gray-700">
                   {action.label}

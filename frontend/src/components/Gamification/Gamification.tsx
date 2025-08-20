@@ -1,5 +1,7 @@
 import React, { useState } from 'react'
 import { motion } from 'framer-motion'
+import { useTranslation } from 'react-i18next'
+import { useRTL } from '../../hooks/useRTL'
 import { 
   Trophy,
   Star,
@@ -17,9 +19,12 @@ import {
 } from 'lucide-react'
 import { Button } from '../ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card'
+import { cn } from '../../lib/utils'
 import { useGamificationStore, Achievement } from '../../store/gamification-store'
 
 const Gamification: React.FC = () => {
+  const { t } = useTranslation()
+  const { isRTL, getFlexDirection, getMargin } = useRTL()
   const [selectedCategory, setSelectedCategory] = useState<string>('all')
   const {
     stats,
@@ -74,18 +79,18 @@ const Gamification: React.FC = () => {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-4">
+        <div className={cn(getFlexDirection("flex items-center gap-4"))}>
           <Trophy className="h-8 w-8 text-yellow-600" />
-          <h1 className="text-3xl font-bold text-gray-900">Achievements</h1>
+          <h1 className="text-3xl font-bold text-gray-900">{t('gamification.title')}</h1>
         </div>
         
         <Button
           variant="outline"
           onClick={resetStats}
-          className="text-gray-600"
+          className="text-gray-600 gap-2"
         >
-          <RotateCcw className="h-4 w-4 mr-2" />
-          Reset Progress
+          <RotateCcw className="h-4 w-4" />
+          {t('gamification.resetProgress')}
         </Button>
       </div>
 
@@ -96,7 +101,7 @@ const Gamification: React.FC = () => {
           <CardHeader className="text-center">
             <div className="text-4xl mb-2">{currentLevel.icon}</div>
             <CardTitle className="text-2xl text-yellow-800">
-              Level {currentLevel.level}
+              {t('gamification.level')} {currentLevel.level}
             </CardTitle>
             <CardDescription className="text-yellow-700 font-medium">
               {currentLevel.title}
@@ -105,7 +110,7 @@ const Gamification: React.FC = () => {
           <CardContent>
             <div className="space-y-2">
               <div className="flex justify-between text-sm">
-                <span>Progress to next level</span>
+                <span>{t('gamification.progressToNext')}</span>
                 <span>{Math.round(progressToNext.percentage)}%</span>
               </div>
               <div className="w-full bg-yellow-200 rounded-full h-3">
@@ -133,7 +138,7 @@ const Gamification: React.FC = () => {
           </CardHeader>
           <CardContent className="space-y-3">
             <div className="flex justify-between">
-              <span className="text-gray-600">Total Points</span>
+              <span className="text-gray-600">{t('gamification.totalPoints')}</span>
               <span className="font-bold text-blue-600">{stats.totalPoints}</span>
             </div>
             <div className="flex justify-between">
@@ -170,7 +175,7 @@ const Gamification: React.FC = () => {
               <div className="text-3xl font-bold text-purple-600">
                 {unlockedAchievements.length}/{totalAchievements}
               </div>
-              <div className="text-sm text-gray-600">Achievements Unlocked</div>
+              <div className="text-sm text-gray-600">{t('gamification.achievementsUnlocked')}</div>
             </div>
             
             <div className="space-y-2">

@@ -1,6 +1,7 @@
 import React from 'react'
 import { motion } from 'framer-motion'
 import { useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { 
   Trophy,
   Star,
@@ -12,10 +13,14 @@ import {
 } from 'lucide-react'
 import { Button } from '../ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card'
+import { cn } from '../../lib/utils'
 import { useGamificationStore } from '../../store/gamification-store'
+import { useRTL } from '../../hooks/useRTL'
 
 const GamificationWidget: React.FC = () => {
   const navigate = useNavigate()
+  const { t } = useTranslation()
+  const { isRTL, getFlexDirection } = useRTL()
   const {
     stats,
     achievements,
@@ -42,18 +47,18 @@ const GamificationWidget: React.FC = () => {
       <Card className="border-2 border-yellow-200 bg-gradient-to-br from-yellow-50 to-orange-50">
         <CardHeader className="pb-3">
           <CardTitle className="flex items-center justify-between">
-            <div className="flex items-center space-x-2">
+            <div className={cn(getFlexDirection("flex items-center gap-2"))}>
               <div className="text-2xl">{currentLevel.icon}</div>
               <div>
                 <div className="text-lg font-bold text-yellow-800">
-                  Level {currentLevel.level}
+                  {t('gamification.level')} {currentLevel.level}
                 </div>
                 <div className="text-sm text-yellow-700">{currentLevel.title}</div>
               </div>
             </div>
             <div className="text-right">
               <div className="text-2xl font-bold text-yellow-800">{stats.totalPoints}</div>
-              <div className="text-xs text-yellow-600">points</div>
+              <div className="text-xs text-yellow-600">{t('gamification.points')}</div>
             </div>
           </CardTitle>
         </CardHeader>
@@ -61,7 +66,7 @@ const GamificationWidget: React.FC = () => {
           {/* Progress to Next Level */}
           <div className="space-y-2">
             <div className="flex justify-between text-sm">
-              <span className="text-yellow-700">Next level progress</span>
+              <span className="text-yellow-700">{t('gamification.progressToNext')}</span>
               <span className="text-yellow-700 font-medium">
                 {Math.round(progressToNext.percentage)}%
               </span>
@@ -80,15 +85,15 @@ const GamificationWidget: React.FC = () => {
           <div className="grid grid-cols-3 gap-3 text-center">
             <div>
               <div className="text-lg font-bold text-orange-700">{stats.appointmentsCompleted}</div>
-              <div className="text-xs text-orange-600">Appointments</div>
+              <div className="text-xs text-orange-600">{t('appointments.title')}</div>
             </div>
             <div>
               <div className="text-lg font-bold text-orange-700">{stats.streakDays}</div>
-              <div className="text-xs text-orange-600">Day Streak</div>
+              <div className="text-xs text-orange-600">{t('gamification.dayStreak')}</div>
             </div>
             <div>
               <div className="text-lg font-bold text-orange-700">{stats.clientsServed}</div>
-              <div className="text-xs text-orange-600">Clients</div>
+              <div className="text-xs text-orange-600">{t('gamification.clients')}</div>
             </div>
           </div>
 
@@ -96,10 +101,10 @@ const GamificationWidget: React.FC = () => {
             variant="outline"
             size="sm"
             onClick={() => navigate('/achievements')}
-            className="w-full bg-white/50 border-yellow-300 text-yellow-800 hover:bg-white/80"
+            className="w-full gap-2 bg-white/50 border-yellow-300 text-yellow-800 hover:bg-white/80"
           >
-            View All Achievements
-            <ChevronRight className="h-4 w-4 ml-2" />
+            {t('gamification.viewAllAchievements')}
+            <ChevronRight className="h-4 w-4" />
           </Button>
         </CardContent>
       </Card>
@@ -108,9 +113,9 @@ const GamificationWidget: React.FC = () => {
       <Card>
         <CardHeader className="pb-3">
           <CardTitle className="flex items-center justify-between">
-            <div className="flex items-center space-x-2">
+            <div className={cn(getFlexDirection("flex items-center gap-2"))}>
               <Trophy className="h-5 w-5 text-purple-600" />
-              <span>Recent Achievements</span>
+              <span>{t('gamification.recentAchievements')}</span>
             </div>
             <div className="text-sm text-gray-500">
               {unlockedCount}/{totalCount}
@@ -126,7 +131,7 @@ const GamificationWidget: React.FC = () => {
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: index * 0.1 }}
-                  className="flex items-center space-x-3 p-2 rounded-lg bg-gray-50"
+                  className="flex items-center gap-3 p-2 rounded-lg bg-gray-50"
                 >
                   <div className="text-xl">{achievement.icon}</div>
                   <div className="flex-1 min-w-0">
@@ -137,7 +142,7 @@ const GamificationWidget: React.FC = () => {
                       {achievement.description}
                     </div>
                   </div>
-                  <div className="flex items-center space-x-1 text-yellow-600">
+                  <div className="flex items-center gap-1 text-yellow-600">
                     <Star className="h-3 w-3" />
                     <span className="text-xs font-medium">{achievement.points}</span>
                   </div>
@@ -149,10 +154,10 @@ const GamificationWidget: React.FC = () => {
                   variant="outline"
                   size="sm"
                   onClick={() => navigate('/achievements')}
-                  className="w-full"
+                  className="w-full gap-2"
                 >
-                  View All Achievements
-                  <Award className="h-4 w-4 ml-2" />
+                  {t('gamification.viewAllAchievements')}
+                  <Award className="h-4 w-4" />
                 </Button>
               </div>
             </>
@@ -160,15 +165,15 @@ const GamificationWidget: React.FC = () => {
             <div className="text-center py-6">
               <Trophy className="h-12 w-12 text-gray-300 mx-auto mb-3" />
               <div className="text-sm text-gray-500 mb-3">
-                Complete your first appointment to start earning achievements!
+                {t('gamification.completeFirstAppointment')}
               </div>
               <Button
                 size="sm"
                 onClick={() => navigate('/appointments')}
-                className="bg-purple-600 hover:bg-purple-700"
+                className="gap-2 bg-purple-600 hover:bg-purple-700"
               >
-                <Target className="h-4 w-4 mr-2" />
-                Get Started
+                <Target className="h-4 w-4" />
+                {t('gamification.getStarted')}
               </Button>
             </div>
           )}

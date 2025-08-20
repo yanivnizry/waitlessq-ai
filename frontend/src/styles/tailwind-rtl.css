@@ -1,0 +1,212 @@
+/* Tailwind CSS RTL Utilities */
+
+/* RTL-aware margin utilities */
+.rtl .ms-0 { margin-inline-start: 0; }
+.rtl .ms-1 { margin-inline-start: 0.25rem; }
+.rtl .ms-2 { margin-inline-start: 0.5rem; }
+.rtl .ms-3 { margin-inline-start: 0.75rem; }
+.rtl .ms-4 { margin-inline-start: 1rem; }
+.rtl .ms-5 { margin-inline-start: 1.25rem; }
+.rtl .ms-6 { margin-inline-start: 1.5rem; }
+.rtl .ms-8 { margin-inline-start: 2rem; }
+.rtl .ms-auto { margin-inline-start: auto; }
+
+.rtl .me-0 { margin-inline-end: 0; }
+.rtl .me-1 { margin-inline-end: 0.25rem; }
+.rtl .me-2 { margin-inline-end: 0.5rem; }
+.rtl .me-3 { margin-inline-end: 0.75rem; }
+.rtl .me-4 { margin-inline-end: 1rem; }
+.rtl .me-5 { margin-inline-end: 1.25rem; }
+.rtl .me-6 { margin-inline-end: 1.5rem; }
+.rtl .me-8 { margin-inline-end: 2rem; }
+.rtl .me-auto { margin-inline-end: auto; }
+
+/* RTL-aware padding utilities */
+.rtl .ps-0 { padding-inline-start: 0; }
+.rtl .ps-1 { padding-inline-start: 0.25rem; }
+.rtl .ps-2 { padding-inline-start: 0.5rem; }
+.rtl .ps-3 { padding-inline-start: 0.75rem; }
+.rtl .ps-4 { padding-inline-start: 1rem; }
+.rtl .ps-5 { padding-inline-start: 1.25rem; }
+.rtl .ps-6 { padding-inline-start: 1.5rem; }
+.rtl .ps-8 { padding-inline-start: 2rem; }
+
+.rtl .pe-0 { padding-inline-end: 0; }
+.rtl .pe-1 { padding-inline-end: 0.25rem; }
+.rtl .pe-2 { padding-inline-end: 0.5rem; }
+.rtl .pe-3 { padding-inline-end: 0.75rem; }
+.rtl .pe-4 { padding-inline-end: 1rem; }
+.rtl .pe-5 { padding-inline-end: 1.25rem; }
+.rtl .pe-6 { padding-inline-end: 1.5rem; }
+.rtl .pe-8 { padding-inline-end: 2rem; }
+
+/* RTL text alignment */
+.rtl .text-start { text-align: start; }
+.rtl .text-end { text-align: end; }
+
+/* RTL border utilities */
+.rtl .border-s { border-inline-start-width: 1px; }
+.rtl .border-e { border-inline-end-width: 1px; }
+.rtl .border-s-0 { border-inline-start-width: 0; }
+.rtl .border-e-0 { border-inline-end-width: 0; }
+
+/* RTL position utilities */
+.rtl .start-0 { inset-inline-start: 0; }
+.rtl .start-1 { inset-inline-start: 0.25rem; }
+.rtl .start-2 { inset-inline-start: 0.5rem; }
+.rtl .start-3 { inset-inline-start: 0.75rem; }
+.rtl .start-4 { inset-inline-start: 1rem; }
+.rtl .start-auto { inset-inline-start: auto; }
+
+.rtl .end-0 { inset-inline-end: 0; }
+.rtl .end-1 { inset-inline-end: 0.25rem; }
+.rtl .end-2 { inset-inline-end: 0.5rem; }
+.rtl .end-3 { inset-inline-end: 0.75rem; }
+.rtl .end-4 { inset-inline-end: 1rem; }
+.rtl .end-auto { inset-inline-end: auto; }
+
+/* RTL flex utilities */
+.rtl .justify-start { justify-content: flex-start; }
+.rtl .justify-end { justify-content: flex-end; }
+.rtl .items-start { align-items: flex-start; }
+.rtl .items-end { align-items: flex-end; }
+.rtl .self-start { align-self: flex-start; }
+.rtl .self-end { align-self: flex-end; }
+
+/* RTL transform utilities */
+.rtl .rotate-180 { transform: rotate(180deg); }
+.rtl .scale-x-flip { transform: scaleX(-1); }
+
+/* RTL rounded corners */
+.rtl .rounded-s { border-start-start-radius: 0.375rem; border-end-start-radius: 0.375rem; }
+.rtl .rounded-e { border-start-end-radius: 0.375rem; border-end-end-radius: 0.375rem; }
+.rtl .rounded-ss { border-start-start-radius: 0.375rem; }
+.rtl .rounded-se { border-start-end-radius: 0.375rem; }
+.rtl .rounded-es { border-end-start-radius: 0.375rem; }
+.rtl .rounded-ee { border-end-end-radius: 0.375rem; }
+
+/* RTL component styles */
+.rtl .card {
+  text-align: start;
+}
+
+.rtl .form-input {
+  text-align: start;
+}
+
+.rtl .form-input[type="number"] {
+  text-align: end; /* Numbers should remain right-aligned even in RTL */
+}
+
+.rtl .btn-group > .btn:first-child {
+  border-start-end-radius: 0;
+  border-end-end-radius: 0;
+}
+
+.rtl .btn-group > .btn:last-child {
+  border-start-start-radius: 0;
+  border-end-start-radius: 0;
+}
+
+.rtl .nav-item {
+  text-align: start;
+}
+
+.rtl .modal-content {
+  text-align: start;
+}
+
+.rtl .dropdown-menu {
+  text-align: start;
+}
+
+.rtl .table th,
+.rtl .table td {
+  text-align: start;
+}
+
+.rtl .table th:first-child,
+.rtl .table td:first-child {
+  text-align: start;
+}
+
+.rtl .breadcrumb-item + .breadcrumb-item::before {
+  content: "\\";
+  margin-inline-end: 0.5rem;
+  margin-inline-start: 0.5rem;
+}
+
+.rtl .alert {
+  text-align: start;
+}
+
+.rtl .badge {
+  text-align: center; /* Badges should remain centered */
+}
+
+/* RTL animations */
+@keyframes rtl-slide-in-right {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes rtl-slide-in-left {
+  from {
+    transform: translateX(-100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes rtl-fade-in-up {
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.rtl .animate-slide-in-right {
+  animation: rtl-slide-in-left 0.3s ease-out;
+}
+
+.rtl .animate-slide-in-left {
+  animation: rtl-slide-in-right 0.3s ease-out;
+}
+
+.rtl .animate-fade-in-up {
+  animation: rtl-fade-in-up 0.3s ease-out;
+}
+
+/* RTL responsive utilities */
+@media (min-width: 640px) {
+  .rtl .sm\:text-start { text-align: start; }
+  .rtl .sm\:text-end { text-align: end; }
+}
+
+@media (min-width: 768px) {
+  .rtl .md\:text-start { text-align: start; }
+  .rtl .md\:text-end { text-align: end; }
+}
+
+@media (min-width: 1024px) {
+  .rtl .lg\:text-start { text-align: start; }
+  .rtl .lg\:text-end { text-align: end; }
+}
+
+@media (min-width: 1280px) {
+  .rtl .xl\:text-start { text-align: start; }
+  .rtl .xl\:text-end { text-align: end; }
+}

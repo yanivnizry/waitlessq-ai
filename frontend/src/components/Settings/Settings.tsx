@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { motion } from 'framer-motion'
 import { toast } from 'sonner'
+import { useTranslation } from 'react-i18next'
+import { useRTL } from '../../hooks/useRTL'
 import { 
   Settings as SettingsIcon,
   Smartphone,
@@ -79,18 +81,60 @@ interface PWAConfig {
 
 
 export function Settings() {
+  const { t } = useTranslation()
+  const { isRTL, getFlexDirection, getMargin } = useRTL()
   const [activeTab, setActiveTab] = useState<'pwa' | 'design' | 'features' | 'advanced' | 'analytics'>('pwa')
   const [showPreview, setShowPreview] = useState(false)
   const [pwaGenerationResult, setPwaGenerationResult] = useState<any>(null)
   const [copied, setCopied] = useState(false)
+  const [subdomainStatus, setSubdomainStatus] = useState<{
+    checking: boolean
+    available: boolean | null
+    message: string
+    generatedSubdomain: string | null
+  }>({
+    checking: false,
+    available: null,
+    message: '',
+    generatedSubdomain: null
+  })
   
   const queryClient = useQueryClient()
 
-  // Fetch current PWA configuration
-  const { data: existingConfig, isLoading: configLoading } = useQuery({
-    queryKey: ['pwa-config'],
-    queryFn: () => api.pwa.getConfig(),
-  })
+  // Function to check subdomain availability
+  const checkSubdomainAvailability = async (appName: string) => {
+    if (!appName.trim()) {
+      setSubdomainStatus({
+        checking: false,
+        available: null,
+        message: '',
+        generatedSubdomain: null
+      })
+      return
+    }
+
+    setSubdomainStatus(prev => ({ ...prev, checking: true }))
+    
+    try {
+      const result = await api.pwa.checkSubdomain(appName)
+      setSubdomainStatus({
+        checking: false,
+        available: result.available,
+        message: result.message,
+        generatedSubdomain: result.generated_subdomain
+      })
+    } catch (error) {
+      console.error('Error checking subdomain:', error)
+      setSubdomainStatus({
+        checking: false,
+        available: false,
+        message: 'Error checking subdomain availability',
+        generatedSubdomain: null
+      })
+    }
+  }
+
+
 
   // Default PWA configuration
   const [pwaConfig, setPwaConfig] = useState<PWAConfig>({
@@ -135,8 +179,26 @@ export function Settings() {
         features: configData.features || prev.features,
         branding: configData.branding || prev.branding
       }))
+      // Reset subdomain status when loading existing config
+      setSubdomainStatus({
+        checking: false,
+        available: null,
+        message: '',
+        generatedSubdomain: null
+      })
     }
   }, [configData])
+
+  // Debounced subdomain check
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      if (pwaConfig.app_name) {
+        checkSubdomainAvailability(pwaConfig.app_name)
+      }
+    }, 500) // 500ms delay
+
+    return () => clearTimeout(timeoutId)
+  }, [pwaConfig.app_name])
 
   // Save PWA configuration mutation
   const savePWAConfigMutation = useMutation({
@@ -146,12 +208,12 @@ export function Settings() {
     },
     onSuccess: (data) => {
       console.log('🔧 Save successful, response:', data)
-      toast.success('PWA configuration saved successfully!')
+      toast.success(t('success.saved'))
       queryClient.invalidateQueries({ queryKey: ['pwa-config'] })
     },
     onError: (error: any) => {
       console.error('PWA save error:', error)
-      let errorMessage = 'Failed to save PWA configuration'
+      let errorMessage = t('errors.generic')
       
       if (error.response?.data?.detail) {
         const detail = error.response.data.detail
@@ -185,6 +247,18 @@ export function Settings() {
 
   const handleSave = () => {
     console.log('🔧 Save button clicked, config to save:', pwaConfig)
+    
+    // Check if app name is valid and subdomain is available
+    if (Boolean(pwaConfig.app_name) && subdomainStatus.available === false) {
+      toast.error(t('settings.pwaConfig.subdomainCheck.cannotSave', { message: subdomainStatus.message }))
+      return
+    }
+    
+    if (Boolean(pwaConfig.app_name) && subdomainStatus.checking) {
+      toast.error(t('settings.pwaConfig.subdomainCheck.waitForCheck'))
+      return
+    }
+    
     savePWAConfigMutation.mutate(pwaConfig)
   }
 
@@ -218,28 +292,32 @@ export function Settings() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-4xl font-bold tracking-tight bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">
-              Settings
+              {t('settings.title')}
             </h1>
             <p className="text-lg text-muted-foreground">
-              Configure your organization settings and client PWA
+              {t('settings.pwaConfig.subtitle')}
             </p>
           </div>
           
           <div className="flex gap-2">
             <Button
               onClick={handleSave}
-              disabled={savePWAConfigMutation.isPending}
+              disabled={
+                savePWAConfigMutation.isPending || 
+                subdomainStatus.checking ||
+                (Boolean(pwaConfig.app_name) && subdomainStatus.available === false)
+              }
               className="shadow-lg hover:shadow-xl transition-all duration-300 bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary"
             >
               {savePWAConfigMutation.isPending ? (
                 <>
                   <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                  Saving...
+                  {t('settings.pwaConfig.saving')}
                 </>
               ) : (
                 <>
                   <Save className="h-4 w-4 mr-2" />
-                  Save Settings
+                  {t('common.save')}
                 </>
               )}
             </Button>
@@ -307,25 +385,57 @@ export function Settings() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Smartphone className="h-5 w-5" />
-                  App Information
+                  {t('settings.pwaConfig.appInfo')}
                 </CardTitle>
                 <CardDescription>
-                  Configure basic information for your client PWA
+                  {t('settings.pwaConfig.appInfoDesc')}
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div>
-                  <label className="text-sm font-medium mb-2 block">App Name</label>
-                  <Input
-                    value={pwaConfig.app_name}
-                    onChange={(e) => setPwaConfig({ ...pwaConfig, app_name: e.target.value })}
-                    placeholder="My Business App"
-                    className="input-focus"
-                  />
+                  <label className="text-sm font-medium mb-2 block">{t('settings.pwaConfig.appName')}</label>
+                  <div className="relative">
+                    <Input
+                      value={pwaConfig.app_name}
+                      onChange={(e) => setPwaConfig({ ...pwaConfig, app_name: e.target.value })}
+                      placeholder="My Business App"
+                      className={`input-focus pr-10 ${
+                        subdomainStatus.available === false ? 'border-red-500 focus:border-red-500' : 
+                        subdomainStatus.available === true ? 'border-green-500 focus:border-green-500' : ''
+                      }`}
+                    />
+                    {subdomainStatus.checking && (
+                      <RefreshCw className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 animate-spin text-muted-foreground" />
+                    )}
+                    {!subdomainStatus.checking && subdomainStatus.available === true && (
+                      <CheckCircle className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-green-500" />
+                    )}
+                    {!subdomainStatus.checking && subdomainStatus.available === false && Boolean(pwaConfig.app_name) && (
+                      <div className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 rounded-full bg-red-500 flex items-center justify-center">
+                        <span className="text-white text-xs font-bold">!</span>
+                      </div>
+                    )}
+                  </div>
+                  {subdomainStatus.generatedSubdomain && (
+                    <div className="mt-2 space-y-1">
+                      <p className="text-xs text-muted-foreground">
+                        {t('settings.pwaConfig.subdomainCheck.url', { 
+                          url: `${subdomainStatus.generatedSubdomain}.waitlessq.com` 
+                        })}
+                      </p>
+                      <p className={`text-xs ${
+                        subdomainStatus.available === true ? 'text-green-600' : 'text-red-600'
+                      }`}>
+                        {subdomainStatus.available === true && '✅ '}
+                        {subdomainStatus.available === false && '❌ '}
+                        {subdomainStatus.message}
+                      </p>
+                    </div>
+                  )}
                 </div>
                 
                 <div>
-                  <label className="text-sm font-medium mb-2 block">Short Name</label>
+                  <label className="text-sm font-medium mb-2 block">{t('settings.pwaConfig.shortName')}</label>
                   <Input
                     value={pwaConfig.app_short_name}
                     onChange={(e) => setPwaConfig({ ...pwaConfig, app_short_name: e.target.value })}
@@ -333,11 +443,11 @@ export function Settings() {
                     className="input-focus"
                     maxLength={12}
                   />
-                  <p className="text-xs text-muted-foreground mt-1">Used for home screen icon (max 12 chars)</p>
+                  <p className="text-xs text-muted-foreground mt-1">{t('settings.pwaConfig.shortNameDesc')}</p>
                 </div>
                 
                 <div>
-                  <label className="text-sm font-medium mb-2 block">Description</label>
+                  <label className="text-sm font-medium mb-2 block">{t('settings.pwaConfig.description')}</label>
                   <textarea
                     value={pwaConfig.app_description}
                     onChange={(e) => setPwaConfig({ ...pwaConfig, app_description: e.target.value })}

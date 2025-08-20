@@ -1,6 +1,8 @@
 import React, { useState } from 'react'
 import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query'
 import { motion } from 'framer-motion'
+import { useTranslation } from 'react-i18next'
+import { useRTL } from '../../hooks/useRTL'
 import { 
   CalendarIcon, 
   Clock, 
@@ -53,6 +55,8 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
   onClose,
   onSuccess
 }) => {
+  const { t } = useTranslation()
+  const { isRTL, getFlexDirection, getMargin } = useRTL()
   const [formData, setFormData] = useState<AppointmentFormData>({
     provider_id: providers?.[0]?.id || 0,
     client_name: '',
@@ -95,7 +99,7 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
         addRevenue(formData.price)
       }
       
-      toast.success('🎉 Appointment created! +20 points earned!')
+      toast.success(t('appointments.createdSuccess'))
       onSuccess()
       onClose()
     },
@@ -181,7 +185,7 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center space-x-2">
             <CalendarIcon className="h-6 w-6 text-blue-600" />
-            <h3 className="text-xl font-semibold">New Appointment</h3>
+            <h3 className="text-xl font-semibold">{t('appointments.add')}</h3>
           </div>
           <Button
             variant="ghost"
@@ -214,7 +218,7 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
           {/* Provider Selection */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Provider *
+              {t('appointments.provider')} *
             </label>
             <select
               value={formData.provider_id}
@@ -222,7 +226,7 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               required
             >
-              <option value={0}>Select a provider</option>
+              <option value={0}>{t('appointments.selectProvider')}</option>
               {providers?.map((provider) => (
                 <option key={provider.id} value={provider.id}>
                   {provider.business_name}
@@ -235,15 +239,15 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                <User className="h-4 w-4 inline mr-1" />
-                Client Name *
+                <User className="h-4 w-4 inline" />
+                {t('appointments.client')} {t('common.name')} *
               </label>
               <Input
                 type="text"
                 value={formData.client_name}
                 onChange={(e) => handleInputChange('client_name', e.target.value)}
                 className={errors.client_name ? 'border-red-500' : ''}
-                placeholder="Enter client name"
+                placeholder={t('appointments.enterClientName')}
                 required
               />
               {errors.client_name && (
@@ -253,29 +257,29 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                <Phone className="h-4 w-4 inline mr-1" />
-                Phone Number
+                <Phone className="h-4 w-4 inline" />
+                {t('appointments.phone')}
               </label>
               <Input
                 type="tel"
                 value={formData.client_phone}
                 onChange={(e) => handleInputChange('client_phone', e.target.value)}
-                placeholder="Enter phone number"
+                placeholder={t('appointments.enterPhoneNumber')}
               />
             </div>
           </div>
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              <Mail className="h-4 w-4 inline mr-1" />
-              Email Address
+                              <Mail className="h-4 w-4 inline" />
+              {t('appointments.email')}
             </label>
             <Input
               type="email"
               value={formData.client_email}
               onChange={(e) => handleInputChange('client_email', e.target.value)}
               className={errors.client_email ? 'border-red-500' : ''}
-              placeholder="Enter email address"
+              placeholder={t('appointments.enterEmailAddress')}
             />
             {errors.client_email && (
               <p className="text-sm text-red-600 mt-1">{errors.client_email}</p>
@@ -286,7 +290,7 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Service *
+                {t('appointments.service')} *
               </label>
               <div className="relative">
                 <select
@@ -297,7 +301,7 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
                   }`}
                   required
                 >
-                  <option value="">Select a service...</option>
+                  <option value="">{t('appointments.selectService')}</option>
                   {services.map((service: any) => (
                     <option key={service.id} value={service.id}>
                       {service.name} - ${service.price} ({service.duration}min)
@@ -319,7 +323,7 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 <Clock className="h-4 w-4 inline mr-1" />
-                Duration (minutes) *
+                {t('appointments.duration')} ({t('appointments.minutes')}) *
               </label>
               <Input
                 type="number"
@@ -336,41 +340,41 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Service Description
+              {t('appointments.serviceDescription')}
             </label>
             <textarea
               value={formData.service_description}
               onChange={(e) => handleInputChange('service_description', e.target.value)}
               rows={3}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="Describe the service or treatment"
+              placeholder={t('appointments.describeService')}
             />
           </div>
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               <FileText className="h-4 w-4 inline mr-1" />
-              Special Requests
+              {t('appointments.specialRequests')}
             </label>
             <textarea
               value={formData.special_requests}
               onChange={(e) => handleInputChange('special_requests', e.target.value)}
               rows={2}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="Any special requests or notes from the client"
+              placeholder={t('appointments.specialRequestsPlaceholder')}
             />
           </div>
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Internal Notes
+              {t('appointments.internalNotes')}
             </label>
             <textarea
               value={formData.notes}
               onChange={(e) => handleInputChange('notes', e.target.value)}
               rows={2}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="Internal notes (not visible to client)"
+              placeholder={t('appointments.internalNotesPlaceholder')}
             />
           </div>
 
@@ -382,7 +386,7 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
               onClick={onClose}
               disabled={createAppointmentMutation.isPending}
             >
-              Cancel
+              {t('common.cancel')}
             </Button>
             <Button
               type="submit"
@@ -392,12 +396,12 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
               {createAppointmentMutation.isPending ? (
                 <>
                   <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                  <span>Creating...</span>
+                  <span>{t('appointments.creating')}</span>
                 </>
               ) : (
                 <>
                   <Save className="h-4 w-4" />
-                  <span>Create Appointment</span>
+                  <span>{t('appointments.createAppointment')}</span>
                 </>
               )}
             </Button>

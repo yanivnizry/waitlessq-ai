@@ -1,9 +1,9 @@
-const CACHE_NAME = 'waitlessq-6-1755548327';
-const API_CACHE_NAME = 'waitlessq-6-1755548327-api';
+const CACHE_NAME = 'waitlessq-6-1755690824';
+const API_CACHE_NAME = 'waitlessq-6-1755690824-api';
 const urlsToCache = [
   './',
-  'client-styles.css?v=1755548327',
-  'client-app.js?v=1755548327',
+  'client-styles.css?v=1755690824',
+  'client-app.js?v=1755690824',
   'manifest.json',
   'https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap',
   'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css'
@@ -115,7 +115,7 @@ self.addEventListener('push', (event) => {
   };
 
   event.waitUntil(
-    self.registration.showNotification('app', options)
+    self.registration.showNotification('clear', options)
   );
 });
 

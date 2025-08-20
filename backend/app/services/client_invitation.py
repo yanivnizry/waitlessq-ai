@@ -191,7 +191,8 @@ class ClientInvitationService:
             # client_auth_service already imported above
             access_token = client_auth_service.create_access_token(
                 client_id=client.id,
-                email=client.email
+                email=client.email,
+                organization_id=client.organization_id
             )
             
             db.commit()

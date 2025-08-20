@@ -117,12 +117,28 @@ async def generate_pwa(organization_id: int, pwa_type: str = "client"):
                         except (json.JSONDecodeError, TypeError):
                             pwa_config[field] = None
             
+            # Generate PWA subdomain from app name (lowercase with underscores)
+            app_name = pwa_config.get("app_name") if pwa_config else None
+            if app_name:
+                # Convert app name to lowercase with underscores
+                pwa_subdomain = app_name.lower().replace(" ", "_").replace("-", "_")
+                # Remove any special characters except underscores
+                import re
+                pwa_subdomain = re.sub(r'[^a-z0-9_]', '', pwa_subdomain)
+                # Remove multiple consecutive underscores
+                pwa_subdomain = re.sub(r'_+', '_', pwa_subdomain)
+                # Remove leading/trailing underscores
+                pwa_subdomain = pwa_subdomain.strip('_')
+            else:
+                # Fallback to organization data (without ID)
+                pwa_subdomain = organization_data.get("subdomain") or organization_data.get("slug") or "waitlessq"
+            
             # Create provider data structure for compatibility
             provider_data = {
                 "id": organization_id,
                 "organization_id": organization_id,
                 "business_name": organization_data.get("name", "WaitLessQ"),
-                "pwa_subdomain": organization_data.get("subdomain") or organization_data.get("slug") or f"org-{organization_id}",
+                "pwa_subdomain": pwa_subdomain,
                 "primary_color": "#3B82F6",
                 "secondary_color": "#1F2937"
             }
@@ -130,9 +146,8 @@ async def generate_pwa(organization_id: int, pwa_type: str = "client"):
             # Generate PWA
             pwa_url = await pwa_generator.generate_pwa(provider_data, pwa_config, pwa_type)
             
-            # Generate subdomain URLs using flexible subdomain
-            org_subdomain = organization_data.get("subdomain") or organization_data.get("slug") or f"org-{organization_id}"
-            subdomain_url = f"http://{org_subdomain}.localhost:8001"
+            # Generate subdomain URLs using PWA subdomain (app name based)
+            subdomain_url = f"http://{pwa_subdomain}.localhost:8001"
             
             # Get PWA generator base URL
             pwa_base_url = os.getenv("PWA_BASE_URL", "http://localhost:8001")
@@ -144,7 +159,7 @@ async def generate_pwa(organization_id: int, pwa_type: str = "client"):
                 "status": "generated",
                 "full_url": f"{pwa_base_url}{pwa_url}",
                 "subdomain_url": subdomain_url,
-                "subdomain_preview": f"{org_subdomain}.localhost:8001"
+                "subdomain_preview": f"{pwa_subdomain}.localhost:8001"
             }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

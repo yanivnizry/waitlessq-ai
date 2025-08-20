@@ -2,6 +2,8 @@ import React, { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { motion } from 'framer-motion'
+import { useTranslation } from 'react-i18next'
+import { useRTL } from '../../hooks/useRTL'
 import { 
   Users, 
   UserPlus, 
@@ -54,6 +56,8 @@ interface ClientFormData {
 }
 
 export function Clients() {
+  const { t } = useTranslation()
+  const { isRTL, getFlexDirection, getMargin } = useRTL()
   const [showForm, setShowForm] = useState(false)
   const [editingClient, setEditingClient] = useState<Client | null>(null)
   const [searchTerm, setSearchTerm] = useState("")
@@ -70,22 +74,22 @@ export function Clients() {
   const sendInvitationMutation = useMutation({
     mutationFn: (clientId: number) => api.clients.sendInvitation(clientId),
     onSuccess: (data) => {
-      toast.success(data.message || 'Invitation sent successfully!')
+      toast.success(data.message || t('clients.invitationSentSuccess'))
       queryClient.invalidateQueries({ queryKey: ['clients'] })
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.detail || 'Failed to send invitation')
+      toast.error(error.response?.data?.detail || t('clients.failedToSendInvitation'))
     },
   })
 
   const resendInvitationMutation = useMutation({
     mutationFn: (clientId: number) => api.clients.resendInvitation(clientId),
     onSuccess: (data) => {
-      toast.success(data.message || 'Invitation resent successfully!')
+      toast.success(data.message || t('clients.invitationResentSuccess'))
       queryClient.invalidateQueries({ queryKey: ['clients'] })
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.detail || 'Failed to resend invitation')
+      toast.error(error.response?.data?.detail || t('clients.failedToResendInvitation'))
     },
   })
 
@@ -93,7 +97,7 @@ export function Clients() {
   const createClientMutation = useMutation({
     mutationFn: (clientData: any) => api.clients.create(clientData),
     onSuccess: (data) => {
-      toast.success('Client created successfully!')
+      toast.success(t('clients.clientCreatedSuccess'))
       queryClient.invalidateQueries({ queryKey: ['clients'] })
       resetForm()
       setShowForm(false)
@@ -107,14 +111,14 @@ export function Clients() {
   const updateClientMutation = useMutation({
     mutationFn: ({ id, data }: { id: number, data: any }) => api.clients.update(id, data),
     onSuccess: (data) => {
-      toast.success('Client updated successfully!')
+      toast.success(t('clients.clientUpdatedSuccess'))
       queryClient.invalidateQueries({ queryKey: ['clients'] })
       resetForm()
       setShowForm(false)
       setEditingClient(null)
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.detail || 'Failed to update client')
+      toast.error(error.response?.data?.detail || t('clients.failedToUpdateClient'))
     },
   })
 
@@ -122,11 +126,11 @@ export function Clients() {
   const deleteClientMutation = useMutation({
     mutationFn: (clientId: number) => api.clients.delete(clientId),
     onSuccess: () => {
-      toast.success('Client deleted successfully!')
+      toast.success(t('clients.clientDeletedSuccess'))
       queryClient.invalidateQueries({ queryKey: ['clients'] })
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.detail || 'Failed to delete client')
+      toast.error(error.response?.data?.detail || t('clients.failedToDeleteClient'))
     },
   })
 
@@ -178,48 +182,73 @@ export function Clients() {
   }
 
   const handleDelete = (id: number) => {
-    if (window.confirm("Are you sure you want to delete this client? This will not delete their appointments.")) {
+    if (window.confirm(t('clients.confirmDelete'))) {
       deleteClientMutation.mutate(id)
     }
   }
 
   const handleSendInvitation = (client: Client) => {
     if (!client.email) {
-      toast.error('Client must have an email address to receive an invitation')
+      toast.error(t('clients.emailRequiredForInvitation'))
       return
     }
     
     if (client.has_account) {
-      toast.info('Client already has an account')
+      toast.info(t('clients.clientAlreadyHasAccount'))
       return
     }
     
     sendInvitationMutation.mutate(client.id)
   }
 
-  const handleResendInvitation = (client: Client) => {
+    const handleResendInvitation = (client: Client) => {
     if (!client.email) {
-      toast.error('Client must have an email address to receive an invitation')
+      toast.error(t('clients.emailRequiredForInvitation'))
       return
     }
-    
+
     resendInvitationMutation.mutate(client.id)
+  }
+
+  const handleOpenPWA = async (client: Client) => {
+    try {
+      // Use the PWA generate endpoint to get the correct URLs
+      const pwaInfo = await api.pwa.generatePWA()
+      
+      if (!pwaInfo || !pwaInfo.subdomain_url) {
+        toast.error('Unable to generate PWA URL. Please try again.')
+        return
+      }
+
+      // Use the subdomain URL from the PWA generator
+      const pwaUrl = pwaInfo.subdomain_url
+
+      // Open PWA in new tab
+      window.open(pwaUrl, '_blank', 'noopener,noreferrer')
+      
+      toast.success(`Opening PWA for ${client.name}`)
+      console.log(`🌐 PWA URL: ${pwaUrl}`)  // Debug log
+      
+    } catch (error) {
+      console.error('Error opening PWA:', error)
+      toast.error('Failed to open PWA. Please try again.')
+    }
   }
 
   const getAccountStatus = (client: Client) => {
     if (client.has_account) {
-      return { status: 'active', text: 'Has Account', icon: CheckCircle, color: 'text-green-600' }
+      return { status: 'active', text: t('clients.hasAccount'), icon: CheckCircle, color: 'text-green-600' }
     } else if (client.invitation_sent_at) {
       const expiry = client.invitation_expires_at ? new Date(client.invitation_expires_at) : null
       const isExpired = expiry && expiry < new Date()
       
       if (isExpired) {
-        return { status: 'expired', text: 'Invitation Expired', icon: XCircle, color: 'text-red-600' }
+        return { status: 'expired', text: t('clients.invitationExpired'), icon: XCircle, color: 'text-red-600' }
       } else {
-        return { status: 'invited', text: 'Invitation Sent', icon: Send, color: 'text-blue-600' }
+        return { status: 'invited', text: t('clients.invitationSent'), icon: Send, color: 'text-blue-600' }
       }
     } else {
-      return { status: 'not_invited', text: 'No Account', icon: User, color: 'text-gray-600' }
+      return { status: 'not_invited', text: t('clients.noAccount'), icon: User, color: 'text-gray-600' }
     }
   }
 
@@ -246,24 +275,23 @@ export function Clients() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Clients</h1>
+          <h1 className="text-3xl font-bold tracking-tight">{t('clients.title')}</h1>
           <p className="text-muted-foreground">
-            Manage your client database and contact information.
+            {t('clients.manageDatabase')}
           </p>
-          <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-            <p className="text-xs text-blue-800">
-              <span className="font-medium">Note:</span> Currently showing clients extracted from your appointments. 
-              Full client management features will be available soon!
+          <div className="mt-2 p-3 bg-green-50 border border-green-200 rounded-lg">
+            <p className="text-xs text-green-800">
+              <span className="font-medium">✅</span> {t('clients.fullClientManagement')}
             </p>
           </div>
         </div>
-        <Button
-          onClick={() => setShowForm(true)}
-          className="bg-blue-600 hover:bg-blue-700"
-        >
-          <UserPlus className="h-4 w-4 mr-2" />
-          Add Client
-        </Button>
+                  <Button
+            onClick={() => setShowForm(true)}
+            className="bg-blue-600 hover:bg-blue-700"
+          >
+            <UserPlus className="h-4 w-4 mr-2" />
+            {t('clients.add')}
+          </Button>
       </div>
 
       {/* Search */}
@@ -271,7 +299,7 @@ export function Clients() {
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Search clients by name, email, or phone..."
+            placeholder={t('clients.searchPlaceholder')}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="pl-10"
@@ -289,58 +317,58 @@ export function Clients() {
           <Card>
             <CardHeader>
               <CardTitle>
-                {editingClient ? "Edit Client" : "Add New Client"}
+                {editingClient ? t('clients.edit') : t('clients.addNew')}
               </CardTitle>
               <CardDescription>
                 {editingClient
-                  ? "Update client information"
-                  : "Add a new client to your database"}
+                  ? t('clients.updateInfo')
+                  : t('clients.addToDatabase')}
               </CardDescription>
             </CardHeader>
             <CardContent>
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="text-sm font-medium">Full Name *</label>
+                    <label className="text-sm font-medium">{t('clients.fullName')} *</label>
                     <Input
                       value={formData.name}
                       onChange={(e) =>
                         setFormData({ ...formData, name: e.target.value })
                       }
-                      placeholder="Enter client's full name"
+                      placeholder={t('clients.enterFullName')}
                       required
                     />
                   </div>
                   <div>
-                    <label className="text-sm font-medium">Email</label>
+                    <label className="text-sm font-medium">{t('clients.email')}</label>
                     <Input
                       type="email"
                       value={formData.email}
                       onChange={(e) =>
                         setFormData({ ...formData, email: e.target.value })
                       }
-                      placeholder="client@example.com"
+                      placeholder={t('clients.emailPlaceholder')}
                     />
                   </div>
                   <div>
-                    <label className="text-sm font-medium">Phone</label>
+                    <label className="text-sm font-medium">{t('clients.phone')}</label>
                     <Input
                       value={formData.phone}
                       onChange={(e) =>
                         setFormData({ ...formData, phone: e.target.value })
                       }
-                      placeholder="+1 (555) 123-4567"
+                      placeholder={t('clients.phonePlaceholder')}
                     />
                   </div>
                   <div>
-                    <label className="text-sm font-medium">Notes</label>
+                    <label className="text-sm font-medium">{t('clients.notes')}</label>
                     <textarea
                       className="w-full min-h-[60px] px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                       value={formData.notes}
                       onChange={(e) =>
                         setFormData({ ...formData, notes: e.target.value })
                       }
-                      placeholder="Any notes about this client..."
+                      placeholder={t('clients.notesPlaceholder')}
                     />
                   </div>
                 </div>
@@ -352,10 +380,10 @@ export function Clients() {
                     {createClientMutation.isPending || updateClientMutation.isPending ? (
                       <>
                         <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                        {editingClient ? "Updating..." : "Creating..."}
+                        {editingClient ? t('clients.updating') : t('clients.creating')}
                       </>
                     ) : (
-                      editingClient ? "Update Client" : "Add Client"
+                      editingClient ? t('clients.updateClient') : t('clients.addClient')
                     )}
                   </Button>
                   <Button
@@ -363,7 +391,7 @@ export function Clients() {
                     variant="outline"
                     onClick={resetForm}
                   >
-                    Cancel
+                    {t('common.cancel')}
                   </Button>
                 </div>
               </form>
@@ -376,7 +404,7 @@ export function Clients() {
       {isLoading && (
         <div className="text-center py-8">
           <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-          <p className="text-sm text-muted-foreground mt-2">Loading clients...</p>
+          <p className="text-sm text-muted-foreground mt-2">{t('clients.loading')}</p>
         </div>
       )}
 
@@ -385,7 +413,7 @@ export function Clients() {
         <Card>
           <CardContent className="py-8 text-center">
             <p className="text-red-600">
-              Failed to load clients. Please try again.
+              {t('clients.loadError')}
             </p>
           </CardContent>
         </Card>
@@ -396,7 +424,7 @@ export function Clients() {
         <Card>
           <CardContent className="py-12 text-center">
             <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-            <h3 className="text-lg font-medium mb-2">No clients yet</h3>
+            <h3 className="text-lg font-medium mb-2">{t('clients.noClientsYet')}</h3>
             <p className="text-muted-foreground mb-4">
               Clients will appear here automatically when you schedule appointments, or you can add them manually.
             </p>
@@ -453,31 +481,45 @@ export function Clients() {
                             </div>
                             
                             {/* Invitation Buttons */}
-                            {client.email && !client.has_account && (
+                            {client.email && (
                               <>
-                                {accountStatus.status === 'not_invited' && (
+                                {!client.has_account && accountStatus.status === 'not_invited' && (
                                   <Button
                                     variant="ghost"
                                     size="icon"
                                     onClick={() => handleSendInvitation(client)}
                                     disabled={sendInvitationMutation.isPending}
-                                    title="Send invitation"
+                                    title={t('clients.sendInvitation')}
                                     className="text-blue-600 hover:text-blue-700"
                                   >
                                     <Send className="h-4 w-4" />
                                   </Button>
                                 )}
                                 
-                                {(accountStatus.status === 'invited' || accountStatus.status === 'expired') && (
+                                {!client.has_account && (accountStatus.status === 'invited' || accountStatus.status === 'expired') && (
                                   <Button
                                     variant="ghost"
                                     size="icon"
                                     onClick={() => handleResendInvitation(client)}
                                     disabled={resendInvitationMutation.isPending}
-                                    title="Resend invitation"
+                                    title={t('clients.resendInvitation')}
                                     className="text-orange-600 hover:text-orange-700"
                                   >
                                     <RefreshCw className="h-4 w-4" />
+                                  </Button>
+                                )}
+                                
+                                {/* Show resend invitation button even for clients with accounts (for admin purposes) */}
+                                {client.has_account && (
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => handleResendInvitation(client)}
+                                    disabled={resendInvitationMutation.isPending}
+                                    title={t('clients.resendInvitation')}
+                                    className="text-purple-600 hover:text-purple-700"
+                                  >
+                                    <Send className="h-4 w-4" />
                                   </Button>
                                 )}
                               </>
@@ -488,11 +530,8 @@ export function Clients() {
                               <Button
                                 variant="ghost"
                                 size="icon"
-                                onClick={() => {
-                                  // TODO: Open PWA for this client
-                                  toast.info('PWA access will be available soon')
-                                }}
-                                title="Open client PWA"
+                                onClick={() => handleOpenPWA(client)}
+                                title={t('clients.openClientPWA')}
                                 className="text-green-600 hover:text-green-700"
                               >
                                 <Shield className="h-4 w-4" />
@@ -504,7 +543,7 @@ export function Clients() {
                               variant="ghost"
                               size="icon"
                               onClick={() => handleEdit(client)}
-                              title="Edit client"
+                              title={t('clients.editClient')}
                             >
                               <Edit className="h-4 w-4" />
                             </Button>
@@ -516,7 +555,7 @@ export function Clients() {
                               onClick={() => handleDelete(client.id)}
                               disabled={deleteClientMutation.isPending}
                               className="text-red-600 hover:text-red-700"
-                              title="Delete client"
+                              title={t('clients.deleteClient')}
                             >
                               {deleteClientMutation.isPending ? (
                                 <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-red-600"></div>
@@ -548,7 +587,7 @@ export function Clients() {
                       <div className="flex items-center gap-2 text-sm">
                         <Clock className="h-4 w-4 text-muted-foreground" />
                         <span>
-                          Last: {new Date(client.last_appointment).toLocaleDateString()}
+                          {t('clients.last')}: {new Date(client.last_appointment).toLocaleDateString()}
                         </span>
                       </div>
                     )}
@@ -556,7 +595,7 @@ export function Clients() {
                       <div className="flex items-center gap-2 text-sm">
                         <Calendar className="h-4 w-4 text-blue-600" />
                         <span className="text-blue-600">
-                          Next: {new Date(client.next_appointment).toLocaleDateString()}
+                          {t('clients.next')}: {new Date(client.next_appointment).toLocaleDateString()}
                         </span>
                       </div>
                     )}

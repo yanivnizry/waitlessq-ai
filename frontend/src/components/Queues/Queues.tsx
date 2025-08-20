@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { motion } from 'framer-motion'
+import { useTranslation } from 'react-i18next'
+import { useRTL } from '../../hooks/useRTL'
 import { 
   Users, 
   UserPlus, 
@@ -11,9 +13,9 @@ import {
 import { Button } from '../ui/button'
 import { Input } from '../ui/input'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card'
+import { cn } from '../../lib/utils'
 import { api } from '../../lib/api-client'
 import { queuesAPI } from '../../services/api'
-import { cn } from '../../lib/utils'
 
 // Types based on backend schemas
 interface Queue {
@@ -68,6 +70,8 @@ interface Provider {
 }
 
 export function Queues() {
+  const { t } = useTranslation()
+  const { isRTL, getFlexDirection, getMargin } = useRTL()
   const [showQueueForm, setShowQueueForm] = useState(false)
   const [showEntryForm, setShowEntryForm] = useState<number | null>(null)
   const [editingQueue, setEditingQueue] = useState<Queue | null>(null)
@@ -164,12 +168,12 @@ export function Queues() {
 
   // Delete queue mutation
   const deleteQueueMutation = useMutation({
-    mutationFn: (id: number) => api.queues.delete(id),
-    onSuccess: () => {
+    mutationFn: (queueId: number) => api.queues.delete(queueId),
+    onSuccess: (_, queueId) => {
       queryClient.invalidateQueries({ queryKey: ["queues"] })
       queryClient.invalidateQueries({ queryKey: ["dashboard-stats"] })
       queryClient.invalidateQueries({ queryKey: ["dashboard-activity"] })
-      if (selectedQueue?.id === id) {
+      if (selectedQueue?.id === queueId) {
         setSelectedQueue(null)
       }
     },
@@ -311,18 +315,18 @@ export function Queues() {
       <div className="flex items-center justify-between">
         <div className="space-y-2">
           <h1 className="text-4xl font-bold tracking-tight bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">
-            Daily Service Queues
+            {t('queues.title')}
           </h1>
           <p className="text-lg text-muted-foreground">
-            Manage daily queues organized by service type
+            {t('queues.manageDaily')}
           </p>
         </div>
         <Button
           onClick={() => setShowQueueForm(true)}
-          className="bg-blue-600 hover:bg-blue-700"
+          className="bg-blue-600 hover:bg-blue-700 gap-2"
         >
-          <UserPlus className="h-4 w-4 mr-2" />
-          Create Queue
+          <UserPlus className="h-4 w-4" />
+          {t('queues.createQueue')}
         </Button>
       </div>
 
@@ -331,7 +335,7 @@ export function Queues() {
         <div className="flex gap-6 items-center">
           <div className="flex-1">
             <label className="text-sm font-medium text-muted-foreground mb-2 block">
-              Select Date
+              {t('queues.selectDate')}
             </label>
             <Input
               type="date"
@@ -342,14 +346,14 @@ export function Queues() {
           </div>
           <div className="flex-1">
             <label className="text-sm font-medium text-muted-foreground mb-2 block">
-              Select Provider
+              {t('queues.selectProvider')}
             </label>
             <select
               value={selectedProvider || ''}
               onChange={(e) => setSelectedProvider(parseInt(e.target.value) || null)}
               className="w-full px-4 py-3 text-base border-2 border-muted focus:border-primary/50 rounded-xl bg-background text-foreground transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-primary/20"
             >
-              <option value="">All Providers</option>
+              <option value="">{t('queues.allProviders')}</option>
               {providers?.map((provider: Provider) => (
                 <option key={provider.id} value={provider.id}>
                   {provider.business_name}
@@ -362,7 +366,7 @@ export function Queues() {
         {selectedProvider && selectedDate && (
           <div className="mt-4 p-3 bg-primary/5 rounded-lg border border-primary/20">
             <p className="text-sm font-medium">
-              📅 Viewing daily queues for {providers?.find(p => p.id === selectedProvider)?.business_name} on{' '}
+              📅 Viewing daily queues for {providers?.find((p: Provider) => p.id === selectedProvider)?.business_name} on{' '}
               {new Date(selectedDate).toLocaleDateString('en-US', { 
                 weekday: 'long', 
                 year: 'numeric', 
@@ -375,14 +379,14 @@ export function Queues() {
       </Card>
 
       {/* Search and Filter */}
-      <div className="flex gap-4">
+      <div className={cn(getFlexDirection("flex gap-4"))}>
         <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Search className={cn("absolute top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground", isRTL ? "right-3" : "left-3")} />
           <Input
-            placeholder="Search queues..."
+            placeholder={t('queues.searchPlaceholder')}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10"
+            className={cn(isRTL ? "pr-10" : "pl-10")}
           />
         </div>
         <select
@@ -390,10 +394,10 @@ export function Queues() {
           onChange={(e) => setStatusFilter(e.target.value)}
           className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
         >
-          <option value="all">All Status</option>
-          <option value="active">Active</option>
-          <option value="paused">Paused</option>
-          <option value="closed">Closed</option>
+          <option value="all">{t('queues.allStatus')}</option>
+          <option value="active">{t('queues.active')}</option>
+          <option value="paused">{t('queues.paused')}</option>
+          <option value="closed">{t('queues.closed')}</option>
         </select>
       </div>
 
@@ -518,7 +522,7 @@ export function Queues() {
       {isLoading && (
         <div className="text-center py-8">
           <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-          <p className="text-sm text-muted-foreground mt-2">Loading queues...</p>
+          <p className="text-sm text-muted-foreground mt-2">{t('queues.loading')}</p>
         </div>
       )}
 
@@ -527,7 +531,7 @@ export function Queues() {
         <Card>
           <CardContent className="py-8 text-center">
             <p className="text-red-600">
-              Failed to load queues. Please try again.
+              {t('queues.loadError')}
             </p>
           </CardContent>
         </Card>
@@ -538,16 +542,16 @@ export function Queues() {
         <Card>
           <CardContent className="py-12 text-center">
             <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-            <h3 className="text-lg font-medium mb-2">No queues yet</h3>
+            <h3 className="text-lg font-medium mb-2">{t('queues.noQueues')}</h3>
             <p className="text-muted-foreground mb-4">
-              Create your first queue to start managing customer flow.
+              {t('queues.createFirst')}
             </p>
             <Button
               onClick={() => setShowQueueForm(true)}
-              className="bg-blue-600 hover:bg-blue-700"
+              className="bg-blue-600 hover:bg-blue-700 gap-2"
             >
-              <UserPlus className="h-4 w-4 mr-2" />
-              Create First Queue
+              <UserPlus className="h-4 w-4" />
+              {t('queues.createFirstQueue')}
             </Button>
           </CardContent>
         </Card>
@@ -641,7 +645,7 @@ export function Queues() {
                       }}
                       className="flex-1"
                     >
-                      <Users className="h-4 w-4 mr-1" />
+                      <Users className="h-4 w-4" />
                       View Queue
                     </Button>
                     <Button
@@ -701,8 +705,9 @@ export function Queues() {
                   <Button
                     size="sm"
                     onClick={() => setShowEntryForm(selectedQueue.id)}
+                    className="gap-1"
                   >
-                    <UserPlus className="h-4 w-4 mr-1" />
+                    <UserPlus className="h-4 w-4" />
                     Add to Queue
                   </Button>
                 </div>
@@ -722,10 +727,10 @@ export function Queues() {
                             </div>
                             <div>
                               <h4 className="font-medium">{entry.client_name}</h4>
-                              <div className="text-sm text-muted-foreground">
+                              <div className="text-sm text-muted-foreground flex gap-2">
                                 {entry.client_phone && <span>📞 {entry.client_phone}</span>}
                                 {entry.client_email && (
-                                  <span className="ml-2">✉️ {entry.client_email}</span>
+                                  <span>✉️ {entry.client_email}</span>
                                 )}
                               </div>
                               <div className="text-xs text-muted-foreground mt-1">
@@ -782,10 +787,10 @@ export function Queues() {
                     <Button
                       size="sm"
                       variant="outline"
-                      className="mt-2"
+                      className="mt-2 gap-1"
                       onClick={() => setShowEntryForm(selectedQueue.id)}
                     >
-                      <UserPlus className="h-4 w-4 mr-1" />
+                      <UserPlus className="h-4 w-4" />
                       Add First Entry
                     </Button>
                   </div>

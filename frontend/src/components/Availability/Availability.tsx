@@ -1,6 +1,8 @@
 import React, { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { motion } from 'framer-motion'
+import { useTranslation } from 'react-i18next'
+import { useRTL } from '../../hooks/useRTL'
 import { 
   Calendar, 
   UserPlus, 
@@ -45,26 +47,36 @@ interface Provider {
 //   }[]
 // }
 
-const DAYS_OF_WEEK = [
-  { key: 'monday', label: 'Monday' },
-  { key: 'tuesday', label: 'Tuesday' },
-  { key: 'wednesday', label: 'Wednesday' },
-  { key: 'thursday', label: 'Thursday' },
-  { key: 'friday', label: 'Friday' },
-  { key: 'saturday', label: 'Saturday' },
-  { key: 'sunday', label: 'Sunday' },
-]
+// DAYS_OF_WEEK will be created dynamically with translations
 
-const DEFAULT_AVAILABILITY: DayAvailability[] = DAYS_OF_WEEK.map(day => ({
-  day: day.key,
-  available: day.key !== 'saturday' && day.key !== 'sunday',
-  slots: day.key !== 'saturday' && day.key !== 'sunday' 
-    ? [{ start: '09:00', end: '17:00' }] 
-    : []
-}))
+// DEFAULT_AVAILABILITY will be created dynamically
 
 export function Availability() {
+  const { t } = useTranslation()
+  const { isRTL, getFlexDirection, getMargin } = useRTL()
+  
+  // Create DAYS_OF_WEEK dynamically with translations
+  const DAYS_OF_WEEK = [
+    { key: 'monday', label: t('availability.monday') },
+    { key: 'tuesday', label: t('availability.tuesday') },
+    { key: 'wednesday', label: t('availability.wednesday') },
+    { key: 'thursday', label: t('availability.thursday') },
+    { key: 'friday', label: t('availability.friday') },
+    { key: 'saturday', label: t('availability.saturday') },
+    { key: 'sunday', label: t('availability.sunday') },
+  ]
+  
   const [selectedProvider, setSelectedProvider] = useState<number>(0)
+  
+  // Create DEFAULT_AVAILABILITY dynamically
+  const DEFAULT_AVAILABILITY: DayAvailability[] = DAYS_OF_WEEK.map(day => ({
+    day: day.key,
+    available: day.key !== 'saturday' && day.key !== 'sunday',
+    slots: day.key !== 'saturday' && day.key !== 'sunday' 
+      ? [{ start: '09:00', end: '17:00' }] 
+      : []
+  }))
+  
   const [weeklySchedule, setWeeklySchedule] = useState<DayAvailability[]>(DEFAULT_AVAILABILITY)
   const [exceptions, setExceptions] = useState<any[]>([])
   const [showExceptionForm, setShowExceptionForm] = useState(false)
@@ -226,9 +238,9 @@ export function Availability() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Availability & Schedule</h1>
+          <h1 className="text-3xl font-bold tracking-tight">{t('availability.title')}</h1>
           <p className="text-muted-foreground">
-            Set your working hours and manage exceptions to prevent appointments during unavailable times.
+            {t('availability.description')}
           </p>
         </div>
         <Button
@@ -241,16 +253,16 @@ export function Availability() {
           ) : (
             <Save className="h-4 w-4 mr-2" />
           )}
-          {createAvailabilityMutation.isPending ? 'Saving...' : 'Save Schedule'}
+          {createAvailabilityMutation.isPending ? t('common.saving') : t('availability.saveSchedule')}
         </Button>
       </div>
 
       {/* Provider Selection */}
       <Card>
         <CardHeader>
-          <CardTitle>Select Provider</CardTitle>
+          <CardTitle>{t('availability.selectProvider')}</CardTitle>
           <CardDescription>
-            Choose which provider's availability you want to manage
+            {t('availability.selectProviderDesc')}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -259,7 +271,7 @@ export function Availability() {
             onChange={(e) => setSelectedProvider(parseInt(e.target.value))}
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
-            <option value={0}>Select a provider</option>
+            <option value={0}>{t('availability.selectProviderOption')}</option>
             {providers?.map((provider: Provider) => (
               <option key={provider.id} value={provider.id}>
                 {provider.business_name}
@@ -276,10 +288,10 @@ export function Availability() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Calendar className="h-5 w-5" />
-                Weekly Schedule
+                {t('availability.weeklySchedule')}
               </CardTitle>
               <CardDescription>
-                Set your regular working hours for each day of the week
+                {t('availability.weeklyScheduleDesc')}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -301,7 +313,7 @@ export function Availability() {
                           onChange={() => toggleDayAvailability(dayIndex)}
                           className="rounded"
                         />
-                        <span className="text-sm">Available</span>
+                        <span className="text-sm">{t('availability.available')}</span>
                       </label>
                     </div>
                     {day.available && (
@@ -311,7 +323,7 @@ export function Availability() {
                         onClick={() => addTimeSlot(dayIndex)}
                       >
                         <UserPlus className="h-4 w-4 mr-1" />
-                        Add Slot
+                        {t('availability.addSlot')}
                       </Button>
                     )}
                   </div>
@@ -326,7 +338,7 @@ export function Availability() {
                             onChange={(e) => handleTimeChange(dayIndex, slotIndex, 'start', e.target.value)}
                             className="w-32"
                           />
-                          <span>to</span>
+                          <span>{t('availability.to')}</span>
                           <Input
                             type="time"
                             value={slot.end}
@@ -348,14 +360,14 @@ export function Availability() {
                       {isTimeConflict(day) && (
                         <div className="flex items-center gap-2 text-red-600 text-sm">
                           <AlertCircle className="h-4 w-4" />
-                          <span>Time slots overlap! Please fix the conflicts.</span>
+                          <span>{t('availability.timeSlotsOverlap')}</span>
                         </div>
                       )}
                     </div>
                   )}
 
                   {!day.available && (
-                    <p className="text-sm text-muted-foreground">Not available on this day</p>
+                    <p className="text-sm text-muted-foreground">{t('availability.notAvailableOnDay')}</p>
                   )}
                 </motion.div>
               ))}
@@ -367,10 +379,10 @@ export function Availability() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <AlertCircle className="h-5 w-5" />
-                Schedule Exceptions
+                {t('availability.scheduleExceptions')}
               </CardTitle>
               <CardDescription>
-                Add specific dates when you're not available or have different hours
+                {t('availability.scheduleExceptionsDesc')}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -380,7 +392,7 @@ export function Availability() {
                 className="w-full"
               >
                 <UserPlus className="h-4 w-4 mr-2" />
-                Add Exception
+                {t('availability.addException')}
               </Button>
 
               {showExceptionForm && (
@@ -391,7 +403,7 @@ export function Availability() {
                 >
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     <div>
-                      <label className="text-sm font-medium">Date</label>
+                      <label className="text-sm font-medium">{t('availability.date')}</label>
                       <Input
                         type="date"
                         value={exceptionForm.date}
@@ -400,35 +412,35 @@ export function Availability() {
                       />
                     </div>
                     <div>
-                      <label className="text-sm font-medium">Status</label>
+                      <label className="text-sm font-medium">{t('availability.status')}</label>
                       <select
                         value={exceptionForm.available ? 'available' : 'unavailable'}
                         onChange={(e) => setExceptionForm({ ...exceptionForm, available: e.target.value === 'available' })}
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                       >
-                        <option value="unavailable">Not Available</option>
-                        <option value="available">Available (Different Hours)</option>
+                        <option value="unavailable">{t('availability.notAvailable')}</option>
+                        <option value="available">{t('availability.availableDifferentHours')}</option>
                       </select>
                     </div>
                   </div>
                   <div>
-                    <label className="text-sm font-medium">Reason (Optional)</label>
+                    <label className="text-sm font-medium">{t('availability.reasonOptional')}</label>
                     <Input
                       value={exceptionForm.reason}
                       onChange={(e) => setExceptionForm({ ...exceptionForm, reason: e.target.value })}
-                      placeholder="Holiday, vacation, sick day, etc."
+                      placeholder={t('availability.reasonPlaceholder')}
                     />
                   </div>
                   <div className="flex gap-2">
                     <Button onClick={addException} size="sm">
-                      Add Exception
+                      {t('availability.addException')}
                     </Button>
                     <Button 
                       onClick={() => setShowExceptionForm(false)} 
                       variant="outline" 
                       size="sm"
                     >
-                      Cancel
+                      {t('common.cancel')}
                     </Button>
                   </div>
                 </motion.div>
@@ -436,7 +448,7 @@ export function Availability() {
 
               {exceptions.length > 0 && (
                 <div className="space-y-2">
-                  <h4 className="font-medium">Upcoming Exceptions</h4>
+                  <h4 className="font-medium">{t('availability.upcomingExceptions')}</h4>
                   {exceptions.map((exception, index) => (
                     <motion.div
                       key={index}
@@ -454,7 +466,7 @@ export function Availability() {
                               ? 'bg-yellow-100 text-yellow-800' 
                               : 'bg-red-100 text-red-800'
                           }`}>
-                            {exception.available ? 'Different Hours' : 'Unavailable'}
+                            {exception.available ? t('availability.differentHours') : t('availability.unavailable')}
                           </span>
                         </div>
                         {exception.reason && (
@@ -486,13 +498,11 @@ export function Availability() {
           <div className="flex items-start gap-3">
             <AlertCircle className="h-5 w-5 text-blue-600 mt-0.5" />
             <div className="space-y-2">
-              <h4 className="font-medium">How Availability Works</h4>
+              <h4 className="font-medium">{t('availability.howAvailabilityWorks')}</h4>
               <ul className="text-sm text-muted-foreground space-y-1">
-                <li>• Set your regular working hours for each day of the week</li>
-                <li>• Add multiple time slots per day if you have breaks</li>
-                <li>• Create exceptions for holidays, vacations, or special hours</li>
-                <li>• Appointments can only be scheduled during available times</li>
-                <li>• Clients will see your availability when booking online</li>
+                {(t('availability.availabilityRules', { returnObjects: true }) as string[]).map((rule: string, index: number) => (
+                  <li key={index}>• {rule}</li>
+                ))}
               </ul>
             </div>
           </div>

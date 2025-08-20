@@ -119,3 +119,12 @@ class ClientLoginResponse(BaseModel):
     access_token: str
     client: ClientResponse
     providers: list  # List of providers this client has appointments with
+
+class ClientForgotPasswordRequest(BaseModel):
+    """Request for password reset"""
+    email: EmailStr
+
+class ClientForgotPasswordResponse(BaseModel):
+    """Response after password reset request"""
+    success: bool
+    message: str

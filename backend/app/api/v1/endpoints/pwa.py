@@ -7,15 +7,96 @@ import os
 import shutil
 from pathlib import Path
 import uuid
+import re
 
 from app.core.database import get_db
 from app.core.config import settings
 from app.services.auth import get_current_user
 from app.models.user import User
 from app.models.pwa_config import PWAConfig
+from app.models.organization import Organization
 from app.schemas.pwa import PWAConfigCreate, PWAConfigUpdate, PWAConfigResponse
 
 router = APIRouter()
+
+def generate_pwa_subdomain(app_name: str) -> str:
+    """Generate PWA subdomain from app name"""
+    if not app_name:
+        return None
+    
+    # Convert app name to lowercase with underscores
+    pwa_subdomain = app_name.lower().replace(" ", "_").replace("-", "_")
+    # Remove any special characters except underscores
+    pwa_subdomain = re.sub(r'[^a-z0-9_]', '', pwa_subdomain)
+    # Remove multiple consecutive underscores
+    pwa_subdomain = re.sub(r'_+', '_', pwa_subdomain)
+    # Remove leading/trailing underscores
+    pwa_subdomain = pwa_subdomain.strip('_')
+    
+    return pwa_subdomain
+
+def check_subdomain_availability(subdomain: str, current_org_id: int, db: Session) -> tuple[bool, str]:
+    """
+    Check if a subdomain is available for use
+    Returns: (is_available: bool, message: str)
+    """
+    if not subdomain:
+        return False, "Subdomain cannot be empty"
+    
+    # Check against existing PWA configs with app names that would generate this subdomain
+    existing_pwas = db.query(PWAConfig).filter(PWAConfig.organization_id != current_org_id).all()
+    for pwa in existing_pwas:
+        if pwa.app_name:
+            existing_subdomain = generate_pwa_subdomain(pwa.app_name)
+            if existing_subdomain == subdomain:
+                return False, f"App name would conflict with existing PWA: '{pwa.app_name}'"
+    
+    # Check against organization subdomains and slugs
+    existing_orgs = db.query(Organization).filter(Organization.id != current_org_id).all()
+    for org in existing_orgs:
+        if org.subdomain == subdomain:
+            return False, f"Subdomain conflicts with organization subdomain: '{org.name}'"
+        if org.slug == subdomain:
+            return False, f"Subdomain conflicts with organization slug: '{org.name}'"
+    
+    # Check against reserved subdomains
+    reserved_subdomains = {
+        'www', 'api', 'admin', 'app', 'mail', 'email', 'ftp', 'blog', 
+        'shop', 'store', 'support', 'help', 'docs', 'status', 'cdn',
+        'static', 'assets', 'media', 'images', 'js', 'css', 'fonts',
+        'waitlessq', 'staging', 'test', 'dev', 'production', 'prod'
+    }
+    
+    if subdomain.lower() in reserved_subdomains:
+        return False, f"'{subdomain}' is a reserved subdomain and cannot be used"
+    
+    return True, "Subdomain is available"
+
+@router.get("/check-subdomain/{app_name}")
+async def check_app_name_availability(
+    app_name: str,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Check if an app name would generate an available subdomain"""
+    subdomain = generate_pwa_subdomain(app_name)
+    
+    if not subdomain:
+        return {
+            "available": False,
+            "app_name": app_name,
+            "generated_subdomain": None,
+            "message": "App name is invalid or empty"
+        }
+    
+    is_available, message = check_subdomain_availability(subdomain, current_user.organization_id, db)
+    
+    return {
+        "available": is_available,
+        "app_name": app_name,
+        "generated_subdomain": subdomain,
+        "message": message
+    }
 
 @router.get("/", response_model=List[PWAConfigResponse])
 async def get_pwa_configs(
@@ -61,6 +142,17 @@ async def save_pwa_config(
     db: Session = Depends(get_db)
 ):
     """Save PWA configuration (create or update automatically)"""
+    # Check subdomain availability if app_name is provided
+    if config.app_name:
+        subdomain = generate_pwa_subdomain(config.app_name)
+        is_available, message = check_subdomain_availability(subdomain, current_user.organization_id, db)
+        
+        if not is_available:
+            raise HTTPException(
+                status_code=400,
+                detail=f"App name '{config.app_name}' is not available: {message}"
+            )
+    
     # Check if organization already has a PWA config
     existing_config = db.query(PWAConfig).filter(
         PWAConfig.organization_id == current_user.organization_id
@@ -92,6 +184,17 @@ async def create_pwa_config(
     db: Session = Depends(get_db)
 ):
     """Create a new PWA configuration"""
+    # Check subdomain availability if app_name is provided
+    if config.app_name:
+        subdomain = generate_pwa_subdomain(config.app_name)
+        is_available, message = check_subdomain_availability(subdomain, current_user.organization_id, db)
+        
+        if not is_available:
+            raise HTTPException(
+                status_code=400,
+                detail=f"App name '{config.app_name}' is not available: {message}"
+            )
+    
     # Check if organization already has a PWA config
     existing_config = db.query(PWAConfig).filter(
         PWAConfig.organization_id == current_user.organization_id
@@ -119,6 +222,17 @@ async def update_pwa_config(
     db: Session = Depends(get_db)
 ):
     """Update a PWA configuration"""
+    # Check subdomain availability if app_name is being updated
+    if config.app_name:
+        subdomain = generate_pwa_subdomain(config.app_name)
+        is_available, message = check_subdomain_availability(subdomain, current_user.organization_id, db)
+        
+        if not is_available:
+            raise HTTPException(
+                status_code=400,
+                detail=f"App name '{config.app_name}' is not available: {message}"
+            )
+    
     db_config = db.query(PWAConfig).filter(
         PWAConfig.id == config_id,
         PWAConfig.organization_id == current_user.organization_id

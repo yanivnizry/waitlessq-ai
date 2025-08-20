@@ -290,6 +290,157 @@ class EmailService:
         
         return self.send_email(client_email, subject, html_content, text_content)
     
+    def send_password_reset_email(
+        self,
+        to_email: str,
+        client_name: str,
+        reset_url: str,
+        organization_name: str
+    ) -> bool:
+        """
+        Send password reset email to client
+        
+        Args:
+            to_email: Email of the client
+            client_name: Name of the client
+            reset_url: Password reset link
+            organization_name: Name of the organization/business
+            
+        Returns:
+            True if email was sent successfully
+        """
+        html_content = f"""
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Password Reset - {organization_name}</title>
+            <style>
+                body {{
+                    font-family: Arial, sans-serif;
+                    line-height: 1.6;
+                    color: #333;
+                    max-width: 600px;
+                    margin: 0 auto;
+                    padding: 20px;
+                }}
+                .header {{
+                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                    color: white;
+                    padding: 30px;
+                    text-align: center;
+                    border-radius: 10px 10px 0 0;
+                }}
+                .content {{
+                    background: #f9f9f9;
+                    padding: 30px;
+                    border-radius: 0 0 10px 10px;
+                }}
+                .button {{
+                    display: inline-block;
+                    background: #667eea;
+                    color: white;
+                    padding: 12px 30px;
+                    text-decoration: none;
+                    border-radius: 5px;
+                    margin: 20px 0;
+                    font-weight: bold;
+                }}
+                .button:hover {{
+                    background: #5a6fd8;
+                }}
+                .footer {{
+                    margin-top: 30px;
+                    padding-top: 20px;
+                    border-top: 1px solid #ddd;
+                    font-size: 12px;
+                    color: #666;
+                }}
+                .warning {{
+                    background: #fff3cd;
+                    border: 1px solid #ffeaa7;
+                    padding: 15px;
+                    border-radius: 5px;
+                    margin: 20px 0;
+                }}
+            </style>
+        </head>
+        <body>
+            <div class="header">
+                <h1>🔐 Password Reset</h1>
+                <p>{organization_name}</p>
+            </div>
+            
+            <div class="content">
+                <h2>Hello {client_name},</h2>
+                
+                <p>We received a request to reset your password for your account at <strong>{organization_name}</strong>.</p>
+                
+                <p>Click the button below to reset your password:</p>
+                
+                <div style="text-align: center;">
+                    <a href="{reset_url}" class="button">Reset Password</a>
+                </div>
+                
+                <div class="warning">
+                    <strong>⚠️ Important:</strong>
+                    <ul>
+                        <li>This link will expire in 1 hour</li>
+                        <li>If you didn't request this password reset, please ignore this email</li>
+                        <li>For security, this link can only be used once</li>
+                    </ul>
+                </div>
+                
+                <p>If the button doesn't work, you can copy and paste this link into your browser:</p>
+                <p style="word-break: break-all; color: #667eea;">{reset_url}</p>
+                
+                <p>If you have any questions, please contact us.</p>
+                
+                <p>Best regards,<br>
+                The {organization_name} Team</p>
+            </div>
+            
+            <div class="footer">
+                <p>This email was sent to {to_email} because a password reset was requested for your account.</p>
+                <p>If you didn't request this, please ignore this email.</p>
+            </div>
+        </body>
+        </html>
+        """
+        
+        text_content = f"""
+        Password Reset - {organization_name}
+        
+        Hello {client_name},
+        
+        We received a request to reset your password for your account at {organization_name}.
+        
+        Click the link below to reset your password:
+        {reset_url}
+        
+        ⚠️ Important:
+        - This link will expire in 1 hour
+        - If you didn't request this password reset, please ignore this email
+        - For security, this link can only be used once
+        
+        If you have any questions, please contact us.
+        
+        Best regards,
+        The {organization_name} Team
+        
+        ---
+        This email was sent to {to_email} because a password reset was requested for your account.
+        If you didn't request this, please ignore this email.
+        """
+        
+        return self.send_email(
+            to_email=to_email,
+            subject=f"Password Reset - {organization_name}",
+            html_content=html_content,
+            text_content=text_content
+        )
+    
     def generate_invitation_token(self, length: int = 32) -> str:
         """Generate a secure random token for invitations"""
         alphabet = string.ascii_letters + string.digits

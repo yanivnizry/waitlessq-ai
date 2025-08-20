@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="theme-color" content="#404045">
-    <title>app</title>
+    <meta name="theme-color" content="#ffffff">
+    <title>clear</title>
     
     <!-- Base URL for relative links -->
-    <base href="/pwa/org-6/">
+    <base href="/pwa/clear/">
     
     <!-- PWA Manifest -->
     <link rel="manifest" href="manifest.json">
@@ -19,7 +19,7 @@
     
     
     <!-- Styles -->
-    <link rel="stylesheet" href="client-styles.css?v=1755548327">
+    <link rel="stylesheet" href="client-styles.css?v=1755690824">
     
     <!-- Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -30,7 +30,7 @@
         <!-- Loading Screen -->
         <div id="loadingScreen" class="loading-screen">
             <div class="loading-spinner"></div>
-            <p>Loading app...</p>
+            <p>Loading clear...</p>
         </div>
 
         <!-- Authentication Screen -->
@@ -39,10 +39,10 @@
                 <div class="auth-header">
                     <div class="app-logo">
                         
-                        <img src="http://localhost:8000/api/v1/pwa/icons/ec9a0c0f-fe68-41cc-bdd4-e65dfb7f01db.ico" alt="app" class="logo-img">
+                        <img src="http://localhost:8000/api/v1/pwa/icons/ec9a0c0f-fe68-41cc-bdd4-e65dfb7f01db.ico" alt="clear" class="logo-img">
                         
                     </div>
-                    <h1>app</h1>
+                    <h1>clear</h1>
                     <p>Access your appointments and providers</p>
                 </div>
 
@@ -85,8 +85,28 @@
                             Sign In
                         </button>
                     </form>
-                    <div class="auth-switch">
+                    <div class="auth-switch" style="border: 2px solid red !important; background: yellow !important; padding: 10px !important;">
                         <p>Don't have an account? <a href="#" onclick="showRegistration()">Create one</a></p>
+                        <p><a href="#" onclick="showForgotPassword()" style="color: red !important; font-weight: bold !important; text-decoration: underline !important;">Forgot your password?</a></p>
+                    </div>
+                </div>
+
+                <!-- Forgot Password Form -->
+                <div id="forgotPasswordForm" class="auth-form" style="display: none;">
+                    <h2>Reset Password</h2>
+                    <p class="auth-description">Enter your email address and we'll send you a link to reset your password.</p>
+                    <form id="forgotPasswordFormElement">
+                        <div class="form-group">
+                            <label for="forgotPasswordEmail">Email</label>
+                            <input type="email" id="forgotPasswordEmail" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-paper-plane"></i>
+                            Send Reset Link
+                        </button>
+                    </form>
+                    <div class="auth-switch">
+                        <p><a href="#" onclick="showLoginForm()">Back to Sign In</a></p>
                     </div>
                 </div>
             </div>
@@ -99,10 +119,10 @@
                 <div class="header-content">
                     <div class="header-left">
                         
-                        <img src="http://localhost:8000/api/v1/pwa/icons/ec9a0c0f-fe68-41cc-bdd4-e65dfb7f01db.ico" alt="app" class="header-logo">
+                        <img src="http://localhost:8000/api/v1/pwa/icons/ec9a0c0f-fe68-41cc-bdd4-e65dfb7f01db.ico" alt="clear" class="header-logo">
                         
                         <div class="header-info">
-                            <h1 class="app-title">app</h1>
+                            <h1 class="app-title">clear</h1>
                             <p class="welcome-text">Welcome back, <span id="clientName">Client</span>!</p>
                         </div>
                     </div>
@@ -291,7 +311,7 @@
                     <i class="fas fa-download"></i>
                 </div>
                 <div class="install-text">
-                    <h3>Install app</h3>
+                    <h3>Install clear</h3>
                     <p>Add to your home screen for quick access</p>
                 </div>
                 <div class="install-actions">
@@ -315,12 +335,12 @@
         window.APP_CONFIG = {
             apiUrl: 'http://localhost:8000',
             organizationId: 6,
-            themeColor: '#404045',
+            themeColor: '#ffffff',
             accentColor: '#dc045b',
             features: {
                 notifications: true,
                 offlineMode: true,
-                locationAccess: false
+                locationAccess: true
             }
         };
         
@@ -331,7 +351,7 @@
             window.APP_CONFIG.invitationToken = invitationToken;
         }
     </script>
-    <script src="client-app.js?v=1755548327"></script>
+    <script src="client-app.js?v=1755690824"></script>
     
     <!-- Service Worker Registration -->
     <script>

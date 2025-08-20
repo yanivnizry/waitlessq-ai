@@ -1,6 +1,8 @@
 import React, { useState } from 'react'
 import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query'
 import { motion } from 'framer-motion'
+import { useTranslation } from 'react-i18next'
+import { useRTL } from '../../hooks/useRTL'
 import {
   Clock,
   User,
@@ -14,6 +16,7 @@ import {
 import { Button } from '../ui/button'
 import { Input } from '../ui/input'
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card'
+import { cn } from '../../lib/utils'
 import { api } from '../../lib/api-client'
 import { servicesAPI } from '../../services/api'
 import { toast } from 'sonner'
@@ -41,6 +44,8 @@ const QuickAppointmentForm: React.FC<QuickAppointmentFormProps> = ({
   onClose,
   onSuccess
 }) => {
+  const { t } = useTranslation()
+  const { isRTL, getFlexDirection, getMargin } = useRTL()
   const [clientName, setClientName] = useState('')
   const [clientPhone, setClientPhone] = useState('')
   const [selectedService, setSelectedService] = useState<any>(null)
@@ -139,7 +144,7 @@ const QuickAppointmentForm: React.FC<QuickAppointmentFormProps> = ({
       <Card className="w-full max-w-lg max-h-[90vh] overflow-y-auto">
         <CardHeader className="pb-4">
           <div className="flex items-center justify-between">
-            <CardTitle className="flex items-center space-x-2">
+            <CardTitle className={cn(getFlexDirection("flex items-center gap-2"))}>
               <Zap className="h-5 w-5 text-blue-600" />
               <span>Quick Appointment</span>
             </CardTitle>
